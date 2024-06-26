@@ -1,7 +1,7 @@
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 
-$SkyRealRelease = $Variables.SkyRealRelease
-$SkyRealPatch = $Variables.SkyRealPatch
+$SkyRealPluginRelease = $Variables.SkyRealPluginRelease
+$SkyRealPluginPatch = $Variables.SkyRealPluginPatch
 $RessourcesPluginsPath = $Variables.PluginDownloadDir
 $OnlineSkyRealPluginURL = $Variables.OnlineSkyRealPluginURL
 $RemoteSkyRealPluginDirectory = $Variables.RemoteSkyRealPluginDirectory
@@ -13,8 +13,8 @@ If (Test-Path -Path $RessourcesPluginsPath)
 }
 New-Item -ItemType Directory -Force -Path $RessourcesPluginsPath | Out-Null
 
-$SourcePluginsDir = [IO.Path]::Combine($RemoteSkyRealPluginDirectory, $SkyRealRelease, "SkrPlugins")
-$SourcePluginsPathFile = [IO.Path]::Combine($SourcePluginsDir, $SkyRealPatch + ".json")
+$SourcePluginsDir = [IO.Path]::Combine($RemoteSkyRealPluginDirectory, $SkyRealPluginRelease, "SkrPlugins")
+$SourcePluginsPathFile = [IO.Path]::Combine($SourcePluginsDir, $SkyRealPluginPatch + ".json")
 If (Test-Path -Path $SourcePluginsPathFile)
 {
 	# Load json file

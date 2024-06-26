@@ -1,6 +1,6 @@
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 $Version = $Variables.Version
-$SkyRealRelease = $Variables.SkyRealRelease
+$SkyRealVersion = $Variables.SkyRealVersion
 $ProductUpgradeCode = $Variables.ProductUpgradeCode
 $InstallerName = $Variables.InstallerName
 $OutputBuildDir = $Variables.OutputBuildDir
@@ -42,7 +42,7 @@ Write-Host "Building installer using NSIS Compiler: $NSISCompilerPath"
 $location = Get-Location
 Set-Location $ExtensionInstallerSourcePath
 
-& "$NSISCompilerPath" /D"PRODUCT_VERSION=$Version" /D"PRODUCT_UPGRADE_CODE=$ProductUpgradeCode" /D"PRODUCT_NAME=$InstallerName" /D"SKYREAL_VERSION=$SkyRealRelease" /D"BUILD_DIR=$OutputInstallDir" main.nsi
+& "$NSISCompilerPath" /D"PRODUCT_VERSION=$Version" /D"PRODUCT_UPGRADE_CODE=$ProductUpgradeCode" /D"PRODUCT_NAME=$InstallerName" /D"SKYREAL_VERSION=$SkyRealVersion" /D"BUILD_DIR=$OutputInstallDir" main.nsi
 
 
 If ($? -ne $true) {
