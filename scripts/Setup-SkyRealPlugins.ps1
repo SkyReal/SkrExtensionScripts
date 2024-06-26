@@ -3,6 +3,8 @@ $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 $SkyRealRelease = $Variables.SkyRealRelease
 $SkyRealPatch = $Variables.SkyRealPatch
 $RessourcesPluginsPath = $Variables.PluginDownloadDir
+$OnlineSkyRealPluginURL = $Variables.OnlineSkyRealPluginURL
+$RemoteSkyRealPluginDirectory = $Variables.RemoteSkyRealPluginDirectory
 
 # Clean legacy plugins
 If (Test-Path -Path $RessourcesPluginsPath)
@@ -11,7 +13,7 @@ If (Test-Path -Path $RessourcesPluginsPath)
 }
 New-Item -ItemType Directory -Force -Path $RessourcesPluginsPath | Out-Null
 
-$SourcePluginsDir = [IO.Path]::Combine("\\192.168.0.6", "SkyRealDownload", "SkyRealSuite", $SkyRealRelease, "SkrPlugins")
+$SourcePluginsDir = [IO.Path]::Combine($RemoteSkyRealPluginDirectory, $SkyRealRelease, "SkrPlugins")
 $SourcePluginsPathFile = [IO.Path]::Combine($SourcePluginsDir, $SkyRealPatch + ".json")
 If (Test-Path -Path $SourcePluginsPathFile)
 {
