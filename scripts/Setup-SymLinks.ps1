@@ -1,4 +1,4 @@
-$Variables = .\Get-Variables.ps1
+$Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 
 $InputUnrealProjectFilePath = $Variables.InputUnrealProject
 $InputUnrealProjectDirectoryPath = (Get-Item $InputUnrealProjectFilePath).Directory

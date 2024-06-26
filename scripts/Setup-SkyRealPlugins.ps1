@@ -1,4 +1,4 @@
-$Variables = .\Get-Variables.ps1
+$Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 
 $SkyRealRelease = $Variables.SkyRealRelease
 $SkyRealPatch = $Variables.SkyRealPatch

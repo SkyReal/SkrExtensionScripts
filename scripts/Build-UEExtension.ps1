@@ -1,5 +1,5 @@
+$Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 
-$Variables = .\Get-Variables.ps1
 $UEEditorEnvVariable = $Variables.UnrealEditorEnvironmentVariable
 $UEPath = (Get-Item -ErrorAction SilentlyContinue -Path "Env:$UEEditorEnvVariable").Value
 

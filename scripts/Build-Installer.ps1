@@ -2,7 +2,7 @@ param(
     [string]$NSISCompilerPath = 'C:\Program Files (x86)\NSIS\makensis.exe'
 )
 
-$Variables = .\Get-Variables.ps1
+$Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 $Version = $Variables.Version
 $SkyRealRelease = $Variables.SkyRealRelease
 $ProductUpgradeCode = $Variables.ProductUpgradeCode
