@@ -24,10 +24,10 @@ Compress-Archive -Path (Join-Path $OutputBuildDir "*") -DestinationPath $SkrAppZ
 Move-Item -Path $SkrAppZipFilePath -Destination $SkrAppFilePath
 
 
-$NSISCompilerPath = 'C:\Program Files (x86)\NSIS\makensis.exe'
+$NSISCompilerPath = (Join-Path $env:NSIS "makensis.exe")
 If (-not (Test-Path -Path $NSISCompilerPath))
 {
-	$NSISCompilerPath = (Join-Path $env:NSIS "makensis.exe")
+	$NSISCompilerPath = 'C:\Program Files (x86)\NSIS\makensis.exe'
 	If (-not (Test-Path -Path $NSISCompilerPath))
 	{
 		Write-Error "NSIS path not found. Please specify it with NSIS environment variable."
