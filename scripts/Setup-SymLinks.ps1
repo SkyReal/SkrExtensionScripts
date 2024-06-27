@@ -13,11 +13,12 @@ Get-ChildItem -Path $RessourcesPluginsPath -Recurse -Filter "*.uplugin" | ForEac
     if ($SkyRealPluginsToIgnore -contains $_.BaseName) 
 	{
 		Write-Host "Ignoring plugin " + $_.BaseName
-		Continue
 	}
-	$fi_info = Get-Item -Path $_.FullName
-	$SymLinks[[IO.Path]::Combine($InputUnrealProjectDirectoryPath, "Plugins", $fi_info.Directory.Name)] = $fi_info.Directory.FullName
-    
+	else
+	{
+		$fi_info = Get-Item -Path $_.FullName
+		$SymLinks[[IO.Path]::Combine($InputUnrealProjectDirectoryPath, "Plugins", $fi_info.Directory.Name)] = $fi_info.Directory.FullName
+    }
 }
 
 foreach ($symlinkRelativePath in $SymLinks.Keys) 
