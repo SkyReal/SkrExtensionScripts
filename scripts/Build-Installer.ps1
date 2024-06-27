@@ -23,16 +23,18 @@ Write-Host "Create skrapp file"
 Compress-Archive -Path (Join-Path $OutputBuildDir "*") -DestinationPath $SkrAppZipFilePath -Force
 Move-Item -Path $SkrAppZipFilePath -Destination $SkrAppFilePath
 
-
-$NSISCompilerPath = (Join-Path $env:NSIS "makensis.exe")
-If (-not (Test-Path -Path $NSISCompilerPath))
+if ($env:NSIS)
+{
+	$NSISCompilerPath = (Join-Path $env:NSIS "makensis.exe")
+}
+else 
 {
 	$NSISCompilerPath = 'C:\Program Files (x86)\NSIS\makensis.exe'
-	If (-not (Test-Path -Path $NSISCompilerPath))
-	{
-		Write-Error "NSIS path not found. Please specify it with NSIS environment variable."
-		return
-	}
+}
+If (-not (Test-Path -Path $NSISCompilerPath))
+{
+	Write-Error "NSIS path not found. Please specify it with NSIS environment variable."
+	return
 }
 
 

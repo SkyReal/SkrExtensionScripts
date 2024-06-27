@@ -27,7 +27,7 @@ If (Test-Path -Path $SourcePluginsPathFile)
 		{
 			$InputFilePath = (Join-Path $SourcePluginsDir $FileSubPath)
 			$OutputFilePath = (Join-Path $RessourcesPluginsPath $FileSubPath)
-			# Copy online zip to local ressource directory
+			# Copy zip to local ressource directory
 			Copy-Item -Path $InputFilePath -Destination $OutputFilePath 
 			
 			# Expand Zip Zip
@@ -45,5 +45,31 @@ If (Test-Path -Path $SourcePluginsPathFile)
 else 
 {
 	# TODO retreive data from web adress
-	Write-Host "File " + $SourcePluginsPathFile + " is missing"
+	Write-Host "File " + $SourcePluginsPathFile + " is missing, switch to online repository"
+	$OnlineSkyRealPluginURL_base = $OnlineSkyRealPluginURL + "/" + $SkyRealPluginRelease + "/SkrPlugins/"
+	$OnlineSkyRealPluginURL_json = $OnlineSkyRealPluginURL_base + $SkyRealPluginPatch + ".json"
+	$response = Invoke-WebRequest -Uri $OnlineSkyRealPluginURL_json
+	$SourcePluginsDocument = $response.Content | ConvertFrom-Json
+	foreach ($FileSubPath in $SourcePluginsDocument.files) 
+	{
+		if ($FileSubPath -like "*.zip")
+		{
+			$InputFilePath = $OnlineSkyRealPluginURL_base + $FileSubPath
+			$OutputFilePath = (Join-Path $RessourcesPluginsPath $FileSubPath)
+			
+			# Download online zip to local ressource directory
+			Invoke-WebRequest -Uri $InputFilePath -OutFile $OutputFilePath
+			
+			# Expand Zip Zip
+			Expand-Archive $OutputFilePath -DestinationPath $RessourcesPluginsPath -Force
+			
+			# Delete Zip
+			Remove-Item -path $OutputFilePath -Force -Recurse
+		} 
+		else
+		{
+			Write-Host "File " $FileSubPath " is not a zip"
+		}
+	}
+	Write-Host $content
 }
