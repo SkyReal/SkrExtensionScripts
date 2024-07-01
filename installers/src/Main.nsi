@@ -51,13 +51,13 @@ function .onInit
     SectionSetSize 0 "$AppPackageUncompressedSize"
 functionEnd
 
-VIProductVersion "${SKYREAL_VERSION}.0.0"
+VIProductVersion "${PRODUCT_VERSION}"
 VIAddVersionKey /LANG=1033 "ProductName" "${PRODUCT_NAME}"
 VIAddVersionKey /LANG=1033 "FileDescription" "${PRODUCT_NAME} Installer"
-VIAddVersionKey /LANG=1033 "CompanyName" "SkrTech"
-VIAddVersionKey /LANG=1033 "LegalCopyright" "© SkrTech"
-VIAddVersionKey /LANG=1033 "ProductVersion" "${SKYREAL_VERSION}.0.0"
-VIAddVersionKey /LANG=1033 "FileVersion" "${SKYREAL_VERSION}.0.0"
+VIAddVersionKey /LANG=1033 "CompanyName" "${COMPANY_NAME}"
+VIAddVersionKey /LANG=1033 "LegalCopyright" "Copyright ${COMPANY_NAME}"
+VIAddVersionKey /LANG=1033 "ProductVersion" "${PRODUCT_VERSION}"
+VIAddVersionKey /LANG=1033 "FileVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey /LANG=1033 "OriginalFilename" "${PRODUCT_NAME}.exe"
 VIAddVersionKey /LANG=1033 "InternalName" "${PRODUCT_NAME}"
 	

@@ -16,4 +16,8 @@ $VariablesDocument.OutputInstallDir = Join-Path $jsonVariableFileDirectory $Vari
 $VariablesDocument.InputUnrealProject = Join-Path $jsonVariableFileDirectory $VariablesDocument.InputUnrealProject 
 $VariablesDocument.PluginDownloadDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.PluginDownloadDir 
 
+if ($VariablesDocument.Version -notmatch "^\d+(\.\d+){3}$") {
+	throw [System.FormatException]::new($VariablesDocument.Version + " is not valid (should be X.X.X.X).")
+}
+
 return $VariablesDocument

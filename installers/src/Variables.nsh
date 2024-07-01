@@ -22,6 +22,10 @@
     !error "PRODUCT_UPGRADE_CODE must be defined from the command line of makensis.exe"
 !endif
 
+!ifndef COMPANY_NAME
+    !error "PRODUCT_UPGRADE_CODE must be defined from the command line of makensis.exe"
+!endif
+
 !include "SplitFirstStrPart.nsh"
 
 Var /GLOBAL ProductName
@@ -53,7 +57,7 @@ Var /GLOBAL AppPackageUncompressedSize
     StrCpy $SkyRealVersion "${SKYREAL_VERSION}"
     StrCpy $ProductVersion "${PRODUCT_VERSION}"
     StrCpy $ProductUpgradeCode "${PRODUCT_UPGRADE_CODE}"
-    StrCpy $CompanyName "Skydea"
+    StrCpy $CompanyName "${COMPANY_NAME}"
     StrCpy $CompanyHelpLink "https://sky-real.com/"
     StrCpy $InstallDate "${INSTALL_DATE}"
 
