@@ -60,6 +60,7 @@ VIAddVersionKey /LANG=1033 "ProductVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey /LANG=1033 "FileVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey /LANG=1033 "OriginalFilename" "${PRODUCT_NAME}.exe"
 VIAddVersionKey /LANG=1033 "InternalName" "${PRODUCT_NAME}"
+VIAddVersionKey /LANG=1033 "Comments" "${PRODUCT_UPGRADE_CODE}"
 	
 Section "install"
 	ClearErrors
