@@ -61,7 +61,7 @@ Var /GLOBAL AppPackageUncompressedSize
     StrCpy $CompanyHelpLink "https://sky-real.com/"
     StrCpy $InstallDate "${INSTALL_DATE}"
 
-	StrCpy $ExtensionJSonDirectoryLocation "$COMMONPROGRAMDATA\$CompanyName\skyrealvr\$SkyRealVersion\extensions"
+	StrCpy $ExtensionJSonDirectoryLocation "$COMMONPROGRAMDATA\Skydea\skyrealvr\$SkyRealVersion\extensions"
 	StrCpy $ExtensionJSonFileLocation "$ExtensionJSonDirectoryLocation\$ProductUpgradeCode.skrlnk"
 
     Push "." ;divider char
