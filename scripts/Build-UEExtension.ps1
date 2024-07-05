@@ -140,9 +140,10 @@ Clean-Dir -DirToClean ([System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked
 
 
 # Check success
+$outputCookDir = [System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked", "Windows", $ProjectName, "Plugins")
 foreach($Plugin in $Plugins)
 {
-	$outputCookDir = [System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked", "Windows", $ProjectName, "Plugins", $Plugin)
+	$outputCookDirTmp = [System.IO.Path]::Combine($outputCookDir, $Plugin)
 	Write-Host "Check if plugin has been successfully build by verifiying path $outputCookDir"  -ForegroundColor Green
 	if (!(Test-Path "$outputCookDir")) {
 		Write-Error "Failed to cook plugin"
@@ -161,9 +162,10 @@ New-Item -ItemType Directory -Force -Path $OutputDir | out-null
 
 foreach($Plugin in $Plugins)
 {
+	$outputCookDirTmp = [System.IO.Path]::Combine($outputCookDir, $Plugin)
 	$OutputPluginDir = Join-Path $OutputDir $Plugin
 	New-Item -ItemType Directory -Force -Path $OutputPluginDir | out-null
-	Move-Item -path $outputCookDirContent -destination $OutputPluginDir 
+	Move-Item -path $outputCookDirTmp -destination $OutputPluginDir 
 	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "*.uplugin") -destination $OutputPluginDir 
 	$pluginOutputPath = (Join-Path $Plugin $Plugin) + ".uplugin"
 	$plugin_paths += $pluginOutputPath
