@@ -162,7 +162,7 @@ New-Item -ItemType Directory -Force -Path $OutputDir | out-null
 
 foreach($Plugin in $Plugins)
 {
-	$outputCookDirTmp = [System.IO.Path]::Combine($outputCookDir, $Plugin)
+	$outputCookDirTmp = [System.IO.Path]::Combine($outputCookDir, $Plugin, "Content")
 	$OutputPluginDir = Join-Path $OutputDir $Plugin
 	New-Item -ItemType Directory -Force -Path $OutputPluginDir | out-null
 	Move-Item -path $outputCookDirTmp -destination $OutputPluginDir 
