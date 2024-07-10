@@ -12,8 +12,8 @@ Unicode true
 Name "${PRODUCT_NAME}"
 Icon "Assets/favicon.ico"
 UninstallIcon "Assets/favicon.ico"
-OutFile "${BUILD_DIR}/${PRODUCT_NAME} Setup ${PRODUCT_VERSION}.exe"
-BrandingText "${PRODUCT_NAME} Setup ${PRODUCT_VERSION}"
+OutFile "${BUILD_DIR}/${PRODUCT_NAME} - Setup ${PRODUCT_VERSION}.exe"
+BrandingText "${PRODUCT_NAME} - Setup ${PRODUCT_VERSION}"
 RequestExecutionLevel admin
 ShowInstDetails show
 ShowUninstDetails show
