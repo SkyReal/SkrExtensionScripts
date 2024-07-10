@@ -24,6 +24,11 @@ Write-Host "Create skrapp file"
 Compress-Archive -Path (Join-Path $OutputBuildDir "*") -DestinationPath $SkrAppZipFilePath -Force
 Move-Item -Path $SkrAppZipFilePath -Destination $SkrAppFilePath
 
+Add-Type -assembly "system.io.compression.filesystem"
+$ArchiveSize = [io.compression.zipfile]::OpenRead($SkrAppFilePath).Entries.Length | Measure-Object -Sum
+$ArchiveSize = $ArchiveSize.Sum / 1000
+Write-Host "Total archve size will be " $ArchiveSize
+
 if ($env:NSIS)
 {
 	$NSISCompilerPath = (Join-Path $env:NSIS "makensis.exe")
@@ -45,7 +50,7 @@ Write-Host "Building installer using NSIS Compiler: $NSISCompilerPath"
 $location = Get-Location
 Set-Location $ExtensionInstallerSourcePath
 
-& "$NSISCompilerPath" /D"PRODUCT_VERSION=$Version" /D"PRODUCT_UPGRADE_CODE=$ProductUpgradeCode" /D"PRODUCT_NAME=$InstallerName" /D"SKYREAL_VERSION=$SkyRealVersion" /D"BUILD_DIR=$OutputInstallDir" /D"COMPANY_NAME=$CompanyName" main.nsi
+& "$NSISCompilerPath" /D"PRODUCT_VERSION=$Version" /D"PRODUCT_UPGRADE_CODE=$ProductUpgradeCode" /D"PRODUCT_NAME=$InstallerName" /D"SKYREAL_VERSION=$SkyRealVersion" /D"BUILD_DIR=$OutputInstallDir" /D"COMPANY_NAME=$CompanyName" /D"ARCHIVE_SIZE=$ArchiveSize" main.nsi
 
 
 If ($? -ne $true) {

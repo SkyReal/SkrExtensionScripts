@@ -26,6 +26,10 @@
     !error "PRODUCT_UPGRADE_CODE must be defined from the command line of makensis.exe"
 !endif
 
+!ifndef ARCHIVE_SIZE
+    !error "ARCHIVE_SIZE must be defined from the command line of makensis.exe"
+!endif
+
 !include "SplitFirstStrPart.nsh"
 
 Var /GLOBAL ProductName
@@ -50,7 +54,7 @@ Var /GLOBAL AppPackageUncompressedSize
     SetRegView 64
 	SetShellVarContext all
 
-    StrCpy $AppPackageUncompressedSize "25000000"
+    StrCpy $AppPackageUncompressedSize "${ARCHIVE_SIZE}"
     StrCpy $AppPackageName "${PRODUCT_NAME} ${PRODUCT_VERSION}.skrapp"
     StrCpy $ProductName "${PRODUCT_NAME}"
     StrCpy $ApplicationName "${PRODUCT_NAME}"
