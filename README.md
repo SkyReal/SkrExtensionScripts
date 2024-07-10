@@ -11,7 +11,8 @@ To make it work, create a `Variables.json` in your root folder of your main repo
 * **ExtensionsPlugins**: The name of the plugins to package into installer.
 * **InstallerName**: The name of the pack of plugins and the name of the installer.
 * **ProductUpgradeCode**: The Guid used for unstall/unistall plugins pack
-* **Version**: The version of the plugins
+* **Version**: The version of the plugins (Major.Minor.Patch)
+* **VersionBuildCounter**: The build counter version of the (for devops capabilities)
 * **SkyRealVersion**: The version of SkyReal compatible with the plugins (Should be `X.Y` where X is major version and Y is minor version) 
 * **OnlineSkyRealPluginURL**: The online URL where to find the lastest plugins of SkyRealVR
 * **RemoteSkyRealPluginDirectory**: The local directory where to find the lastest plugins of SkyRealVR
