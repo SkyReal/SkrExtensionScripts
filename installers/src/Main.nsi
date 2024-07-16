@@ -88,6 +88,10 @@ Section "install"
     WriteRegDWORD HKLM "$UninstallRegKeyPath" "NoModify" "1"
     WriteRegDWORD HKLM "$UninstallRegKeyPath" "NoRepair" "1"
 
+    ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
+    IntFmt $0 "0x%08X" $0
+    WriteRegDWORD HKLM "$UninstallRegKeyPath" "EstimatedSize" "$0"
+	
 	# Create a new file
 	ClearErrors
 	CreateDirectory "$ExtensionJSonDirectoryLocation"
