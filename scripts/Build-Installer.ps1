@@ -25,8 +25,10 @@ Compress-Archive -Path (Join-Path $OutputBuildDir "*") -DestinationPath $SkrAppZ
 Move-Item -Path $SkrAppZipFilePath -Destination $SkrAppFilePath
 
 Add-Type -assembly "system.io.compression.filesystem"
-$ArchiveSize = [io.compression.zipfile]::OpenRead($SkrAppFilePath).Entries.Length | Measure-Object -Sum
+$Archive = [io.compression.zipfile]::OpenRead($SkrAppFilePath)
+$ArchiveSize = $Archive.Entries.Length | Measure-Object -Sum
 $ArchiveSize = $ArchiveSize.Sum / 1000
+$Archive.Dispose()
 Write-Host "Total archve size will be " $ArchiveSize
 
 if ($env:NSIS)
