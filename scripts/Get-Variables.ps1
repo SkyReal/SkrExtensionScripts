@@ -9,7 +9,30 @@ while ($ParentPath -ne $null) {
 }
 
 $jsonVariableFileDirectory = (Get-Item $jsonVariableFile).Directory
+$jsonVariableLocalFile = Join-Path $ParentPath.FullName "Variables_local.json"
 $VariablesDocument = Get-Content -Path $jsonVariableFile | ConvertFrom-Json
+$VariablesLocalDocument = Get-Content -Path $jsonVariableLocalFile | ConvertFrom-Json
+
+function Merge-Json ($json1, $json2) 
+{
+    foreach ($prop in $json2.PSObject.Properties) 
+	{
+        if ($json1."$($prop.Name)" -and $prop.Value -is [PSCustomObject]) 
+		{
+            Merge-Json $json1."$($prop.Name)" $prop.Value
+        } 
+		else 
+		{
+            $json1."$($prop.Name)" = $prop.Value
+        }
+    }
+}
+
+Merge-Json $VariablesDocument $VariablesLocalDocument
+
+# Uncomment this line to display JSon
+# $VariablesDocument | ConvertTo-Json -Depth 10 | ForEach-Object { Write-Host $_ }
+
 
 $VariablesDocument.OutputBuildDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.OutputBuildDir 
 $VariablesDocument.OutputInstallDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.OutputInstallDir 
