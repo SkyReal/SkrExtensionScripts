@@ -6,6 +6,7 @@ $InstallerName = $Variables.InstallerName
 $OutputBuildDir = $Variables.OutputBuildDir
 $OutputInstallDir = $Variables.OutputInstallDir
 $CompanyName = $Variables.CompanyName
+$AdditionalInstallersScripts = $Variables.AdditionalInstallersScripts
 
 $RepositoryPath = Resolve-Path (Join-Path $PSScriptRoot "..")
 $ExtensionInstallerSourcePath = (Join-Path (Join-Path $RepositoryPath "installers") "src")
@@ -63,3 +64,8 @@ else {
 }
 
 Set-Location $location
+
+foreach	($AdditionalInstallersScript in $AdditionalInstallersScripts)
+{
+	& "$AdditionalInstallersScript" 
+}
