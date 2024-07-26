@@ -31,18 +31,30 @@ If (Test-Path -Path $SourcePluginsPathFile)
 			$OutputFilePath = (Join-Path $RessourcesPluginsPath $FileSubPath)
 			
 			Write-Host "Start Copy from" $InputFilePath "to" $OutputFilePath
+			
 			# Copy zip to local ressource directory
-			Start-BitsTransfer -Source $InputFilePath -Destination $OutputFilePath -Description "Copy SkrPlugins into $OutputFilePath" -DisplayName "Copy SkrPlugins"
-			
-			# Expand Zip Zip
-			Expand-Archive $OutputFilePath -DestinationPath $RessourcesPluginsPath -Force
-			
-			# Delete Zip
-			Remove-Item -path $OutputFilePath -Force -Recurse
+			try {
+				Start-BitsTransfer -Source $InputFilePath -Destination $OutputFilePath -Description "Copy SkrPlugins into $OutputFilePath" -DisplayName "Copy SkrPlugins" -Priority Foreground -ErrorAction Stop
+			} catch [System.Exception] {
+				Write-Host "Failed to use Start-BitsTransfer, switch to Copy-Item"
+				Copy-Item -Path $InputFilePath -Destination $OutputFilePath 
+			}
+			If (Test-Path -Path $OutputFilePath)
+			{
+				# Expand Zip Zip
+				Expand-Archive $OutputFilePath -DestinationPath $RessourcesPluginsPath -Force
+				
+				# Delete Zip
+				Remove-Item -path $OutputFilePath -Force -Recurse
+			}
+			else
+			{
+				Write-Error "Failed to use download file. Abort."
+			}
 		} 
 		else
 		{
-			Write-Host "File " $FileSubPath " is not a zip"
+			Write-Error "File " $FileSubPath " is not a zip"
 		}
 	}
 }
