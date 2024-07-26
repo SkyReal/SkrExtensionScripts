@@ -36,7 +36,7 @@ if (Test-Path $jsonVariableLocalFile)
 }
 
 # Uncomment this line to display JSon
-$VariablesDocument | ConvertTo-Json -Depth 10 | ForEach-Object { Write-Host $_ }
+# $VariablesDocument | ConvertTo-Json -Depth 10 | ForEach-Object { Write-Host $_ }
 
 
 $VariablesDocument.OutputBuildDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.OutputBuildDir 
@@ -53,6 +53,7 @@ if ($VariablesDocument.Version -notmatch "^\d+(\.\d+){3}$") {
 	throw [System.FormatException]::new($VariablesDocument.Version + " is not valid (should be X.X.X.X).")
 }
 
-$VariablesDocument | ConvertTo-Json -Depth 10 | ForEach-Object { Write-Host $_ }
+# Uncomment this line to display JSon
+# $VariablesDocument | ConvertTo-Json -Depth 10 | ForEach-Object { Write-Host $_ }
 
 return $VariablesDocument

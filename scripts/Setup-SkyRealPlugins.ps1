@@ -1,3 +1,5 @@
+Import-Module BitsTransfer
+
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 
 $SkyRealPluginRelease = $Variables.SkyRealPluginRelease
@@ -27,8 +29,10 @@ If (Test-Path -Path $SourcePluginsPathFile)
 		{
 			$InputFilePath = (Join-Path $SourcePluginsDir $FileSubPath)
 			$OutputFilePath = (Join-Path $RessourcesPluginsPath $FileSubPath)
+			
+			Write-Host "Start Copy from" $InputFilePath "to" $OutputFilePath
 			# Copy zip to local ressource directory
-			Copy-Item -Path $InputFilePath -Destination $OutputFilePath 
+			Start-BitsTransfer -Source $InputFilePath -Destination $OutputFilePath -Description "Copy SkrPlugins into $OutputFilePath" -DisplayName "Copy SkrPlugins"
 			
 			# Expand Zip Zip
 			Expand-Archive $OutputFilePath -DestinationPath $RessourcesPluginsPath -Force
@@ -44,10 +48,11 @@ If (Test-Path -Path $SourcePluginsPathFile)
 }
 else 
 {
-	# TODO retreive data from web adress
+	# retreive data from web adress
 	Write-Host "File " + $SourcePluginsPathFile + " is missing, switch to online repository"
 	$OnlineSkyRealPluginURL_base = $OnlineSkyRealPluginURL + "/" + $SkyRealPluginRelease + "/SkrPlugins/"
 	$OnlineSkyRealPluginURL_json = $OnlineSkyRealPluginURL_base + $SkyRealPluginPatch + ".json"
+	Write-Host "Read online file " $OnlineSkyRealPluginURL_json
 	$response = Invoke-WebRequest -Uri $OnlineSkyRealPluginURL_json
 	$SourcePluginsDocument = $response.Content | ConvertFrom-Json
 	foreach ($FileSubPath in $SourcePluginsDocument.files) 
@@ -56,6 +61,8 @@ else
 		{
 			$InputFilePath = $OnlineSkyRealPluginURL_base + $FileSubPath
 			$OutputFilePath = (Join-Path $RessourcesPluginsPath $FileSubPath)
+			
+			Write-Host "Start download from" $InputFilePath "to" $OutputFilePath
 			
 			# Download online zip to local ressource directory
 			Invoke-WebRequest -Uri $InputFilePath -OutFile $OutputFilePath
