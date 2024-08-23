@@ -53,6 +53,10 @@ if ($VariablesDocument.Version -notmatch "^\d+(\.\d+){3}$") {
 	throw [System.FormatException]::new($VariablesDocument.Version + " is not valid (should be X.X.X.X).")
 }
 
+if ($VariablesDocument.ProductUpgradeCode -eq "641C1FE1-7B3E-4184-92B4-DD701FE7F4E9") {
+	Write-Warning "Warning, ProductUpgradeCode variable in Variable.json should be changed (ignore this warning on sample project)."
+}
+
 # Uncomment this line to display JSon
 # $VariablesDocument | ConvertTo-Json -Depth 10 | ForEach-Object { Write-Host $_ }
 
