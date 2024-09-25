@@ -129,7 +129,7 @@ Clean-Dir -DirToClean ([System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked
 # Cook content
     # Run Cook commandlet
     $unrealEditorExe=[System.IO.Path]::Combine($UEPath,"Engine","Binaries","Win64","UnrealEditor.exe")
-    [String]$cookCommandLine = "$UProjectfile -run=cook -unversioned -TargetPlatform=Windows -iterate -unattended -stdout"
+    [String]$cookCommandLine = """$UProjectfile"" -run=cook -unversioned -TargetPlatform=Windows -iterate -unattended -stdout"
     Write-Host "Cook project with cmd line: $unrealEditorExe $cookCommandLine" -ForegroundColor Green
 
     $cookResult = (Execute-SkrProcess -ProgramToRun "$unrealEditorExe" -ProgramArgs "$cookCommandLine")
