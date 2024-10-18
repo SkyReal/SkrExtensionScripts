@@ -22,7 +22,8 @@ If (Test-Path -Path $OutputInstallDir)
 New-Item -Path $OutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
 
 Write-Host "Create skrapp file"
-Compress-Archive -Path (Join-Path $OutputBuildDir "*") -DestinationPath $SkrAppZipFilePath -Force
+$filesToCompress = Get-ChildItem -Path $OutputBuildDir -Exclude *.skrlnk
+Compress-Archive -Path $filesToCompress.FullName -DestinationPath $SkrAppZipFilePath -Force
 Move-Item -Path $SkrAppZipFilePath -Destination $SkrAppFilePath
 
 Add-Type -assembly "system.io.compression.filesystem"

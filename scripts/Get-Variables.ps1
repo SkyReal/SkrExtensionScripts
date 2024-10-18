@@ -38,6 +38,16 @@ if (Test-Path $jsonVariableLocalFile)
 # Uncomment this line to display JSon
 # $VariablesDocument | ConvertTo-Json -Depth 10 | ForEach-Object { Write-Host $_ }
 
+if (-not ($VariablesDocument.PSObject.Properties.Name -contains "UnrealEditorRootDirLocalFullPath") -or (-not (Test-Path $VariablesDocument.UnrealEditorRootDirLocalFullPath)))
+{
+	$UEEditorEnvVariable = $VariablesDocument.UnrealEditorEnvironmentVariable
+	$UEPath = (Get-Item -ErrorAction SilentlyContinue -Path "Env:$UEEditorEnvVariable").Value
+	$VariablesDocument | Add-Member -MemberType NoteProperty -Name 'UnrealEditorRootDirLocalFullPath' -Value $UEPath
+	if (-not (Test-Path $VariablesDocument.UnrealEditorRootDirLocalFullPath))
+	{
+		Write-Warning "Warning, UnrealEditorRootDirLocalFullPath of UnrealEditorEnvironmentVariable variable in Variable.json is invalid."
+	}
+}
 
 $VariablesDocument.OutputBuildDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.OutputBuildDir 
 $VariablesDocument.OutputInstallDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.OutputInstallDir 
