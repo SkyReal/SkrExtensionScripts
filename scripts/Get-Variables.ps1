@@ -48,9 +48,9 @@ if (-not $VariablesDocument.PSObject.Properties['AdditionalInstallersScripts']) 
 }
 $VariablesDocument.AdditionalInstallersScripts = $VariablesDocument.AdditionalInstallersScripts | ForEach-Object { Join-Path $jsonVariableFileDirectory $_ }
 
-$VariablesDocument.Version = $VariablesDocument.Version + "." + $VariablesDocument.VersionBuildCounter
-if ($VariablesDocument.Version -notmatch "^\d+(\.\d+){3}$") {
-	throw [System.FormatException]::new($VariablesDocument.Version + " is not valid (should be X.X.X.X).")
+$VariablesDocument.FullVersion = $VariablesDocument.Version + "." + $VariablesDocument.VersionBuildCounter
+if ($VariablesDocument.FullVersion -notmatch "^\d+(\.\d+){3}$") {
+	throw [System.FormatException]::new($VariablesDocument.FullVersion + " is not valid (should be X.X.X.X).")
 }
 
 # Uncomment this line to display JSon

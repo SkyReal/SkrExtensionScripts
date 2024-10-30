@@ -1,5 +1,5 @@
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
-$Version = $Variables.Version
+$Version = $Variables.FullVersion
 $SkyRealVersion = $Variables.SkyRealVersion
 $ProductUpgradeCode = $Variables.ProductUpgradeCode
 $InstallerName = $Variables.InstallerName
