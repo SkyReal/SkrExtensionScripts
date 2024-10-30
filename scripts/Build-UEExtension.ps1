@@ -1,7 +1,6 @@
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 
-$UEEditorEnvVariable = $Variables.UnrealEditorEnvironmentVariable
-$UEPath = (Get-Item -ErrorAction SilentlyContinue -Path "Env:$UEEditorEnvVariable").Value
+$UEPath = $Variables.UnrealEditorRootDirLocalFullPath
 
 if ($UEPath -ne $null -And (Test-Path ($UEPath))) {
 	Write-Host "UnrealInstallDir FOUND : $UEPath using env variable $UEEnvVar for unreal version $UEMajorVersion.$UEMinorVersion" -ForegroundColor Green
@@ -118,25 +117,22 @@ else
 }
 
 # Clean Output Directory
-
-Write-Debug "1"
 Clean-Dir -DirToClean $OutputDir
 
 # Clean Cooked Directory
-Write-Debug "2"
 Clean-Dir -DirToClean ([System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked"))
 
 # Cook content
-    # Run Cook commandlet
-    $unrealEditorExe=[System.IO.Path]::Combine($UEPath,"Engine","Binaries","Win64","UnrealEditor.exe")
-    [String]$cookCommandLine = "$UProjectfile -run=cook -unversioned -TargetPlatform=Windows -iterate -unattended -stdout"
-    Write-Host "Cook project with cmd line: $unrealEditorExe $cookCommandLine" -ForegroundColor Green
+# Run Cook commandlet
+$unrealEditorExe=[System.IO.Path]::Combine($UEPath,"Engine","Binaries","Win64","UnrealEditor.exe")
+[String]$cookCommandLine = """$UProjectfile"" -run=cook -unversioned -TargetPlatform=Windows -iterate -unattended -stdout"
+Write-Host "Cook project with cmd line: $unrealEditorExe $cookCommandLine" -ForegroundColor Green
 
-    $cookResult = (Execute-SkrProcess -ProgramToRun "$unrealEditorExe" -ProgramArgs "$cookCommandLine")
-    if ($cookResult -ne 0) {
-        Write-Error "Error while trying to cook. Code=$cookResult"
-        return 13
-    }
+$cookResult = (Execute-SkrProcess -ProgramToRun "$unrealEditorExe" -ProgramArgs "$cookCommandLine")
+if ($cookResult -ne 0) {
+	Write-Error "Error while trying to cook. Code=$cookResult"
+	return 13
+}
 
 
 # Check success
@@ -151,8 +147,6 @@ foreach($Plugin in $Plugins)
 		return 1
 	}
 }
-
-
 
 # Move result into output directory
 $plugin_paths = @()
@@ -176,7 +170,13 @@ $json_data = @{
     "api" = 1
     "plugins" = $plugin_paths
 }
+$json_filePath = (Join-Path $OutputDir "SkrExtensions.json")
 $json_string = ConvertTo-Json -InputObject $json_data
-$json_string | Set-Content -Path (Join-Path $OutputDir "SkrExtensions.json")
+$json_string | Set-Content -Path $json_filePath
+
+# Create the .skrlnk file
+$skrlnk_fileName = $Variables.InstallerName + ".skrlnk"
+$json_filePath | Set-Content -Path (Join-Path $OutputDir $skrlnk_fileName)
+
 
 return 0

@@ -38,6 +38,16 @@ if (Test-Path $jsonVariableLocalFile)
 # Uncomment this line to display JSon
 # $VariablesDocument | ConvertTo-Json -Depth 10 | ForEach-Object { Write-Host $_ }
 
+if (-not ($VariablesDocument.PSObject.Properties.Name -contains "UnrealEditorRootDirLocalFullPath") -or (-not (Test-Path $VariablesDocument.UnrealEditorRootDirLocalFullPath)))
+{
+	$UEEditorEnvVariable = $VariablesDocument.UnrealEditorEnvironmentVariable
+	$UEPath = (Get-Item -ErrorAction SilentlyContinue -Path "Env:$UEEditorEnvVariable").Value
+	$VariablesDocument | Add-Member -MemberType NoteProperty -Name 'UnrealEditorRootDirLocalFullPath' -Value $UEPath
+	if (-not (Test-Path $VariablesDocument.UnrealEditorRootDirLocalFullPath))
+	{
+		Write-Warning "Warning, UnrealEditorRootDirLocalFullPath of UnrealEditorEnvironmentVariable variable in Variable.json is invalid."
+	}
+}
 
 $VariablesDocument.OutputBuildDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.OutputBuildDir 
 $VariablesDocument.OutputInstallDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.OutputInstallDir 
@@ -51,6 +61,10 @@ $VariablesDocument.AdditionalInstallersScripts = $VariablesDocument.AdditionalIn
 $VariablesDocument.FullVersion = $VariablesDocument.Version + "." + $VariablesDocument.VersionBuildCounter
 if ($VariablesDocument.FullVersion -notmatch "^\d+(\.\d+){3}$") {
 	throw [System.FormatException]::new($VariablesDocument.FullVersion + " is not valid (should be X.X.X.X).")
+}
+
+if ($VariablesDocument.ProductUpgradeCode -eq "641C1FE1-7B3E-4184-92B4-DD701FE7F4E9") {
+	Write-Warning "Warning, ProductUpgradeCode variable in Variable.json should be changed (ignore this warning on sample project)."
 }
 
 # Uncomment this line to display JSon
