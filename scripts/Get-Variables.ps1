@@ -58,6 +58,10 @@ if (-not $VariablesDocument.PSObject.Properties['AdditionalInstallersScripts']) 
 }
 $VariablesDocument.AdditionalInstallersScripts = $VariablesDocument.AdditionalInstallersScripts | ForEach-Object { Join-Path $jsonVariableFileDirectory $_ }
 
+if (-not $VariablesDocument.PSObject.Properties['FullVersion']) {
+    $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'FullVersion' -Value "0.0.0.0"
+}
+
 $VariablesDocument.FullVersion = $VariablesDocument.Version + "." + $VariablesDocument.VersionBuildCounter
 if ($VariablesDocument.FullVersion -notmatch "^\d+(\.\d+){3}$") {
 	throw [System.FormatException]::new($VariablesDocument.FullVersion + " is not valid (should be X.X.X.X).")
