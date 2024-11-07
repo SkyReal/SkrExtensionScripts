@@ -101,9 +101,7 @@ function Execute-SkrProcess([String]$ProgramToRun, [String]$ProgramArgs)
 }
 
 # Add Plugin to always cook directories
-
 $PluginDefaultGameIniPath = Join-Path (Join-Path $UProjectPath "Config") "DefaultGame.ini"
-
 if(Test-Path -Path $PluginDefaultGameIniPath)
 {
 	foreach($Plugin in $Plugins)
@@ -173,6 +171,7 @@ foreach($Plugin in $Plugins)
 	New-Item -ItemType Directory -Force -Path $OutputPluginDir | out-null
 	Move-Item -path $outputCookDirTmp -destination $OutputPluginDir 
 	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "*.uplugin") -destination $OutputPluginDir 
+	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "Resources") -destination $OutputPluginDir  -Recurse
 	$pluginOutputPath = (Join-Path $Plugin $Plugin) + ".uplugin"
 	$plugin_paths += $pluginOutputPath
 }
