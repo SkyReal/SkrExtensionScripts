@@ -1,5 +1,16 @@
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 
+foreach ($hook in $Variables.Hooks) {
+    if ($hook.trigger -eq "setup_symlinks_before") {
+        $scriptPath = $hook.path
+        
+        if (Test-Path -Path $scriptPath) {
+            Write-Host "Execute hook before setup symlinks ($scriptPath)"
+            & $scriptPath 
+        }
+    }
+}
+
 $InputUnrealProjectFilePath = $Variables.InputUnrealProject
 $InputUnrealProjectDirectoryPath = (Get-Item $InputUnrealProjectFilePath).Directory
 $RessourcesPluginsPath = $Variables.PluginDownloadDir
@@ -33,4 +44,15 @@ foreach ($symlinkRelativePath in $SymLinks.Keys)
 	New-Item -ItemType Directory -Force -Path $SymlinkFrom | Out-Null
 	New-Item -ItemType Directory -Force -Path (Split-Path $SymlinkTo) | Out-Null
 	New-Item -ItemType SymbolicLink -Path $SymlinkTo -Target $SymlinkFrom -Force
+}
+
+foreach ($hook in $Variables.Hooks) {
+    if ($hook.trigger -eq "setup_symlinks_after") {
+        $scriptPath = $hook.path
+        
+        if (Test-Path -Path $scriptPath) {
+            Write-Host "Execute hook after setup symlinks ($scriptPath)"
+            & $scriptPath 
+        }
+    }
 }

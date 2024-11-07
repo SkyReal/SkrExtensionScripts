@@ -1,4 +1,15 @@
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
+foreach ($hook in $Variables.Hooks) {
+    if ($hook.trigger -eq "build_installer_before") {
+        $scriptPath = $hook.path
+        
+        if (Test-Path -Path $scriptPath) {
+            Write-Host "Execute hook before building installer ($scriptPath)"
+            & $scriptPath 
+        }
+    }
+}
+
 $Version = $Variables.FullVersion
 $SkyRealVersion = $Variables.SkyRealVersion
 $ProductUpgradeCode = $Variables.ProductUpgradeCode
@@ -69,4 +80,16 @@ Set-Location $location
 foreach	($AdditionalInstallersScript in $AdditionalInstallersScripts)
 {
 	& "$AdditionalInstallersScript" 
+}
+
+
+foreach ($hook in $Variables.Hooks) {
+    if ($hook.trigger -eq "build_installer_after") {
+        $scriptPath = $hook.path
+        
+        if (Test-Path -Path $scriptPath) {
+            Write-Host "Execute hook after building installer ($scriptPath)"
+            & $scriptPath 
+        }
+    }
 }

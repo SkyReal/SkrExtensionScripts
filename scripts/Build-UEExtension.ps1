@@ -1,5 +1,16 @@
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 
+foreach ($hook in $Variables.Hooks) {
+    if ($hook.trigger -eq "build_extension_before") {
+        $scriptPath = $hook.path
+        
+        if (Test-Path -Path $scriptPath) {
+            Write-Host "Execute hook before building extension with Unreal ($scriptPath)"
+            & $scriptPath 
+        }
+    }
+}
+
 $UEPath = $Variables.UnrealEditorRootDirLocalFullPath
 
 if ($UEPath -ne $null -And (Test-Path ($UEPath))) {
@@ -178,5 +189,16 @@ $json_string | Set-Content -Path $json_filePath
 $skrlnk_fileName = $Variables.InstallerName + ".skrlnk"
 $json_filePath | Set-Content -Path (Join-Path $OutputDir $skrlnk_fileName)
 
+
+foreach ($hook in $Variables.Hooks) {
+    if ($hook.trigger -eq "build_extension_after") {
+        $scriptPath = $hook.path
+        
+        if (Test-Path -Path $scriptPath) {
+            Write-Host "Execute hook after building extension with Unreal ($scriptPath)"
+            & $scriptPath 
+        }
+    }
+}
 
 return 0

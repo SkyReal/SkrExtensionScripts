@@ -53,10 +53,15 @@ $VariablesDocument.OutputBuildDir = Join-Path $jsonVariableFileDirectory $Variab
 $VariablesDocument.OutputInstallDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.OutputInstallDir 
 $VariablesDocument.InputUnrealProject = Join-Path $jsonVariableFileDirectory $VariablesDocument.InputUnrealProject 
 $VariablesDocument.PluginDownloadDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.PluginDownloadDir 
-if (-not $VariablesDocument.PSObject.Properties['AdditionalInstallersScripts']) {
-    $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'AdditionalInstallersScripts' -Value @()
+if (-not $VariablesDocument.PSObject.Properties['Hooks']) {
+    $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'Hooks' -Value @()
 }
-$VariablesDocument.AdditionalInstallersScripts = $VariablesDocument.AdditionalInstallersScripts | ForEach-Object { Join-Path $jsonVariableFileDirectory $_ }
+foreach ($hook in $VariablesDocument.Hooks) {
+    $hook.path = Join-Path $jsonVariableFileDirectory $hook.path
+	if (-Not (Test-Path -Path $hook.path)) {
+        Write-Warning "The hook script file doesn't exists ($fullPath)"
+    }
+}
 
 if (-not $VariablesDocument.PSObject.Properties['FullVersion']) {
     $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'FullVersion' -Value "0.0.0.0"

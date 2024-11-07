@@ -19,6 +19,18 @@ To make it work, create a `Variables.json` in your root folder of your main repo
 * **SkyRealPluginPatch**: The release patch of SkyRealVR used to download plugins (Should be `X.Y.Z` where X is major version, Y is minor version and Z the patch number or `latest` for latest version or `RCXX` for specific release candidate)
 * **SkyRealPluginsToIgnore**: The list of SkyRealVR plugin names to ignore. This can be used to improve performances.
 * **UnrealEditorEnvironmentVariable**: The environement variable used to specify the path of Unreal editor used for compilation.
+* **Hooks**: The hooks variable is used to specify additional scripts during all the setup/build prosses. To make it work, add as much items as you have hooks with following info:
+  * **path**: The path (relative to repo root directory) of the hook powershell script.
+  * **trigger**: The trigger raising the hook. Available values:
+    * **setup_download_before**: Hook script called before the skyreal plugins download starts
+    * **setup_download_after**: Hook script called after the skyreal plugins download starts
+    * **setup_symlinks_before**: Hook script called before the plugins symlinks creation
+    * **setup_symlinks_after**: Hook script called after the plugins symlinks creation
+    * **build_extension_before**: Hook script called before building extension
+    * **build_extension_after**: Hook script called after building extension
+    * **build_installer_before**: Hook script called before building extension's installer
+    * **build_installer_after**: Hook script called after building extension's installer
+
 
 For local work, a file `Variables_local.json` can be created (git ignore) in the same directory as `Variables.json`. It will automatically be loaded to override any information inside `Variables.json`.
 

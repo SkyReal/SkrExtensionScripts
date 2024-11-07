@@ -1,6 +1,16 @@
 Import-Module BitsTransfer
 
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
+foreach ($hook in $Variables.Hooks) {
+    if ($hook.trigger -eq "setup_download_before") {
+        $scriptPath = $hook.path
+        
+        if (Test-Path -Path $scriptPath) {
+            Write-Host "Execute hook before download ($scriptPath)"
+            & $scriptPath 
+        }
+    }
+}
 
 $SkyRealPluginRelease = $Variables.SkyRealPluginRelease
 $SkyRealPluginPatch = $Variables.SkyRealPluginPatch
@@ -91,4 +101,16 @@ else
 		}
 	}
 	Write-Host $content
+}
+
+
+foreach ($hook in $Variables.Hooks) {
+    if ($hook.trigger -eq "setup_download_after") {
+        $scriptPath = $hook.path
+        
+        if (Test-Path -Path $scriptPath) {
+            Write-Host "Execute hook after download ($scriptPath)"
+            & $scriptPath 
+        }
+    }
 }
