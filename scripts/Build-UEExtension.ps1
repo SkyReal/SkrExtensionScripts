@@ -135,11 +135,12 @@ Clean-Dir -DirToClean ([System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked
 
 # Cook content
 # Run Cook commandlet
-$unrealEditorExe=[System.IO.Path]::Combine($UEPath,"Engine","Binaries","Win64","UnrealEditor.exe")
-[String]$cookCommandLine = """$UProjectfile"" -run=cook -unversioned -TargetPlatform=Windows -iterate -unattended -stdout"
-Write-Host "Cook project with cmd line: $unrealEditorExe $cookCommandLine" -ForegroundColor Green
+$unrealEditorExe=[System.IO.Path]::Combine($UEPath,"Engine","Binaries","Win64","UnrealEditor-Cmd.exe")
+$unrealEditorUAT=[System.IO.Path]::Combine($UEPath,"Engine","Build","BatchFiles","RunUAT.bat")
+[String]$cookCommandLine = "  BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -cook -project=""$UProjectfile"" -unrealexe=""$unrealEditorExe"" -platform=Win64 -installed -skipstage"
+Write-Host "Cook project with cmd line: $unrealEditorUAT $cookCommandLine" -ForegroundColor Green
 
-$cookResult = (Execute-SkrProcess -ProgramToRun "$unrealEditorExe" -ProgramArgs "$cookCommandLine")
+$cookResult = (Execute-SkrProcess -ProgramToRun "$unrealEditorUAT" -ProgramArgs "$cookCommandLine")
 if ($cookResult -ne 0) {
 	Write-Error "Error while trying to cook. Code=$cookResult"
 	return 13
