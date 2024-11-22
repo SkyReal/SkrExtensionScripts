@@ -1,3 +1,7 @@
+if ($PSVersionTable.PSVersion.Major -lt 6) {
+    throw "PowerShell version lower than 6 is not supported : $($PSVersionTable.PSVersion)."
+}
+
 $ParentPath = (Get-Item (Resolve-Path (Join-Path $PSScriptRoot "..")))
 
 while ($ParentPath -ne $null) {
