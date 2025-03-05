@@ -23,7 +23,7 @@
 !endif
 
 !ifndef COMPANY_NAME
-    !error "PRODUCT_UPGRADE_CODE must be defined from the command line of makensis.exe"
+    !error "COMPANY_NAME must be defined from the command line of makensis.exe"
 !endif
 
 !ifndef ARCHIVE_SIZE
@@ -36,8 +36,6 @@ Var /GLOBAL ProductName
 Var /GLOBAL ApplicationName
 Var /GLOBAL ProductVersion
 Var /GLOBAL ProductUpgradeCode
-Var /GLOBAL ProductUpgradeCodeOverrideFile
-Var /GLOBAL HasOverrideProductUpgradeCode
 Var /GLOBAL SkyRealVersion
 Var /GLOBAL CompanyName
 Var /GLOBAL CompanyHelpLink
@@ -63,21 +61,11 @@ Var /GLOBAL AppPackageUncompressedSize
     StrCpy $SkyRealVersion "${SKYREAL_VERSION}"
     StrCpy $ProductVersion "${PRODUCT_VERSION}"
     StrCpy $ProductUpgradeCode "${PRODUCT_UPGRADE_CODE}"
-    StrCpy $ProductUpgradeCodeOverrideFile "$INSTDIR\OverrideUpgradeCode.txt"
-	StrCpy $HasOverrideProductUpgradeCode "0"
     StrCpy $CompanyName "${COMPANY_NAME}"
     StrCpy $CompanyHelpLink "https://sky-real.com/"
     StrCpy $InstallDate "${INSTALL_DATE}"
 
-	${GetParameters} $0
-	ClearErrors
-	${GetOptions} $0 "VERSIONED_PRODUCTCODE=" $1
-    ${If} $1 != ""
-		StrCpy $ProductUpgradeCode $1
-		StrCpy $HasOverrideProductUpgradeCode "1"
-    ${EndIf}
 	
-
 	StrCpy $ExtensionJSonDirectoryLocation "$COMMONPROGRAMDATA\Skydea\skyrealvr\$SkyRealVersion\extensions"
 	StrCpy $ExtensionJSonFileLocation "$ExtensionJSonDirectoryLocation\$ProductUpgradeCode.skrlnk"
 
@@ -101,18 +89,6 @@ Var /GLOBAL AppPackageUncompressedSize
         StrCpy $InstallLocation "$INSTDIR"
     ${EndIf}
 
-    ${If} "${un}" == "un." 
-		${If} ${FileExists} $ProductUpgradeCodeOverrideFile			
-			ClearErrors
-			FileOpen $0 "$ProductUpgradeCodeOverrideFile" r
-			${If} ${Errors}
-				Abort
-			${EndIf}
-			FileRead $0 $1
-			StrCpy $ProductUpgradeCode "$1"
-			FileClose $0
-		${EndIf}
-    ${EndIf}
     StrCpy $UninstallRegKeyPath "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ProductUpgradeCode"
     StrCpy $INSTDIR "$InstallLocation"
 

@@ -93,18 +93,6 @@ Section "install"
     IntFmt $0 "0x%08X" $0
     WriteRegDWORD HKLM "$UninstallRegKeyPath" "EstimatedSize" "$0"
 	
-	# Create Product code file if HasOverideProductUpgradeCode
-	${If} $HasOverrideProductUpgradeCode == "1"
-		ClearErrors
-		FileOpen $0 "$ProductUpgradeCodeOverrideFile" w
-		${If} ${Errors}
-			MessageBox MB_OK|MB_ICONEXCLAMATION "Can't write override upgrade code in $ProductUpgradeCodeOverrideFile"
-			Abort
-		${EndIf}
-		FileWrite $0 "$ProductUpgradeCode"
-		FileClose $0 ;Closes the filled file
-	${EndIf}
-	
 	# Create a new file
 	ClearErrors
 	CreateDirectory "$ExtensionJSonDirectoryLocation"
@@ -139,7 +127,7 @@ function un.onInit
 
     ${IfNot} ${FileExists} $UninstallExecutable
         ${IfNot} ${Silent}
-            MessageBox MB_OK "$UninstallExecutable file doesn't exist, uninstall aborted. ($ProductUpgradeCodeOverrideFile) (PUC: $ProductUpgradeCode)" IDOK
+            MessageBox MB_OK "$UninstallExecutable file doesn't exist, uninstall aborted. (PUC: $ProductUpgradeCode)" IDOK
         ${EndIf}
 
         SetErrorLevel ${UNSAFE_UNINSTALL_LOCATION}
@@ -150,10 +138,6 @@ functionEnd
 Section "Uninstall"
     !insertmacro ShowVariables
     SetRegView 64
-	
-	${If} ${FileExists} $ProductUpgradeCodeOverrideFile
-		Delete "$ProductUpgradeCodeOverrideFile"
-	${EndIf}
 	
     Delete $ExtensionJSonFileLocation
 	

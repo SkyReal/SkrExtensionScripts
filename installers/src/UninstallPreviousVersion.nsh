@@ -11,7 +11,7 @@
 
     ${If} $R0 != ""
         ${If} ${Cmd} `MessageBox MB_YESNO|MB_ICONQUESTION "Uninstall previous version?" /SD IDYES IDYES`
-            ExecWait "$R0 /UPGRADE=yes VERSIONED_PRODUCTCODE=$ProductUpgradeCode _?=$INSTDIR" $1
+            ExecWait "$R0 /UPGRADE=yes _?=$INSTDIR" $1
 
             ${If} $1 <> 0
 		        MessageBox MB_OK|MB_ICONSTOP "Failed to uninstall previous version!" /SD IDOK
