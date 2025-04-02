@@ -46,7 +46,7 @@ if (-not ($VariablesDocument.PSObject.Properties.Name -contains "UnrealEditorRoo
 {
 	$UEEditorEnvVariable = $VariablesDocument.UnrealEditorEnvironmentVariable
 	$UEPath = (Get-Item -ErrorAction SilentlyContinue -Path "Env:$UEEditorEnvVariable").Value
-	$VariablesDocument | Add-Member -MemberType NoteProperty -Name 'UnrealEditorRootDirLocalFullPath' -Value $UEPath
+	$VariablesDocument | Add-Member -Force -MemberType NoteProperty -Name 'UnrealEditorRootDirLocalFullPath' -Value $UEPath
 	if (-not (Test-Path $VariablesDocument.UnrealEditorRootDirLocalFullPath))
 	{
 		Write-Warning "Warning, UnrealEditorRootDirLocalFullPath of UnrealEditorEnvironmentVariable variable in Variable.json is invalid."
