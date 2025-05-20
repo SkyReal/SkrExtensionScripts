@@ -14,10 +14,10 @@ foreach ($hook in $Variables.Hooks) {
 $UEPath = $Variables.UnrealEditorRootDirLocalFullPath
 
 if ($UEPath -ne $null -And (Test-Path ($UEPath))) {
-	Write-Host "UnrealInstallDir FOUND : $UEPath using env variable $UEEnvVar for unreal version $UEMajorVersion.$UEMinorVersion" -ForegroundColor Green
+	Write-Host "UnrealInstallDir FOUND : $UEPath" -ForegroundColor Green
 }
 else {
-	Write-Host "UnrealInstallDir NOT FOUND using env variable $UEEnvVar for unreal version $UEMajorVersion.$UEMinorVersion" -ForegroundColor Red
+	Write-Host "UnrealInstallDir NOT FOUND : $UEPath" -ForegroundColor Red
 	return -1;
 }
 
@@ -158,6 +158,7 @@ foreach($Plugin in $Plugins)
 	}
 }
 
+
 # Move result into output directory
 $plugin_paths = @()
 $outputCookDirContent = (Join-Path $outputCookDir "*")
@@ -172,7 +173,13 @@ foreach($Plugin in $Plugins)
 	Move-Item -path $outputCookDirTmp -destination $OutputPluginDir 
 	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "*.uplugin") -destination $OutputPluginDir 
 	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "Resources") -destination $OutputPluginDir  -Recurse
-	$pluginOutputPath = (Join-Path $Plugin $Plugin) + ".uplugin"
+	
+	# Set ExplicitlyLoaded field to True
+	$pluginOutputPath = (Join-Path $OutputPluginDir $Plugin) + ".uplugin"
+	$jsonContent = Get-Content -Raw -Path $pluginOutputPath | ConvertFrom-Json
+	$jsonContent | Add-Member -MemberType NoteProperty -Name "ExplicitlyLoaded" -Value $true -Force
+	$jsonContent | ConvertTo-Json -Depth 10 | Set-Content -Path $pluginOutputPath
+	
 	$plugin_paths += $pluginOutputPath
 }
 
