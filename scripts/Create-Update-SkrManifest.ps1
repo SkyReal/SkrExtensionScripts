@@ -76,23 +76,36 @@ function Update-PluginManifestFile {
     Set-Field Version       	$ShortVersion $true
 	Set-Field PackageCategory   "Extension"
 
-    if (-not $Manifest.Contains('PackageDependencies') -or -not $Manifest['PackageDependencies']) {
-        $Manifest['PackageDependencies'] = @(
-            foreach ($Dep in $UPluginJson.Plugins) {
-                if ($Variables.ExtensionsPlugins -contains $Dep.Name) {
-                    [ordered]@{ Name = $Dep.Name; Version = $ShortVersion }
-                }
-            }
-        )
-    }
-	else
+	# Handle PackageDependencies: convert to map of Name->Version
+    if (-not $Manifest.Contains('PackageDependencies') -or -not $Manifest['PackageDependencies']) 
 	{
-		foreach ($dep in $Manifest['PackageDependencies']) {
-            if ($Variables.ExtensionsPlugins -contains $dep.Name) {
-                $dep.Version = $ShortVersion
+        $depsMap = [ordered]@{}
+        foreach ($Dep in $UPluginJson.Plugins) {
+            if ($Variables.ExtensionsPlugins -contains $Dep.Name) {
+                $depsMap[$Dep.Name] = $ShortVersion
             }
         }
-	}
+        $Manifest['PackageDependencies'] = $depsMap
+    }
+    else 
+	{
+        # Ensure existing entries map properly
+        $existingPD = $Manifest['PackageDependencies']
+		
+        # Update existing entries
+        foreach ($name in @($existingPD.Keys)) {
+            if ($Variables.ExtensionsPlugins -contains $name) {
+                $existingPD[$name] = $ShortVersion
+            }
+        }
+        # Add any new dependencies from .uplugin
+        foreach ($Dep in $UPluginJson.Plugins) {
+            if ($Variables.ExtensionsPlugins -contains $Dep.Name -and -not $existingPD.Contains($Dep.Name)) {
+                $existingPD[$Dep.Name] = $ShortVersion
+            }
+        }
+        $Manifest['PackageDependencies'] = $existingPD
+    }
 	
 	# Handle PackageMetadatas: ensure ShowInExtensionList and Cooked
     if (-not $Manifest.Contains('PackageMetadatas') -or -not $Manifest['PackageMetadatas']) {
