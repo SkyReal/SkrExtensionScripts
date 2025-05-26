@@ -180,7 +180,9 @@ foreach($Plugin in $Plugins)
 	$jsonContent | Add-Member -MemberType NoteProperty -Name "ExplicitlyLoaded" -Value $true -Force
 	$jsonContent | ConvertTo-Json -Depth 10 | Set-Content -Path $pluginOutputPath
 	
-	$plugin_paths += $pluginOutputPath
+	# Register plugin local path
+	$pluginOutputRelativePath = (Join-Path $Plugin $Plugin) + ".uplugin"
+	$plugin_paths += $pluginOutputRelativePath
 }
 
 # Create extension.json file
