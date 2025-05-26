@@ -10,3 +10,5 @@ if($SkipExtraction -eq $false)
 
 # setup symlinks 
 & (Join-Path $PSScriptRoot Setup-SymLinks.ps1)
+
+& (Join-Path $PSScriptRoot .\Create-Update-SkrManifest.ps1)

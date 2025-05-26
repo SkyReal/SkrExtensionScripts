@@ -174,6 +174,12 @@ foreach($Plugin in $Plugins)
 	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "*.uplugin") -destination $OutputPluginDir 
 	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "Resources") -destination $OutputPluginDir  -Recurse
 	
+	$manifestPath = (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "$Plugin.skrmanifest")
+	if(Test-Path $manifestPath)
+	{
+		Copy-Item $manifestPath -destination $OutputPluginDir
+	}
+	
 	# Set ExplicitlyLoaded field to True
 	$pluginOutputPath = (Join-Path $OutputPluginDir $Plugin) + ".uplugin"
 	$jsonContent = Get-Content -Raw -Path $pluginOutputPath | ConvertFrom-Json
