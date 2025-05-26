@@ -98,12 +98,10 @@ function Update-PluginManifestFile {
     if (-not $Manifest.Contains('PackageMetadatas') -or -not $Manifest['PackageMetadatas']) {
         $Manifest['PackageMetadatas'] = [ordered]@{
             'ShowInExtensionList' = 'True'
-            'Cooked'               = 'True'
         }
     } else {
         $Meta = $Manifest['PackageMetadatas']
         if (-not $Meta.Contains('ShowInExtensionList')) { $Meta.Add('ShowInExtensionList', 'True') }
-        if (-not $Meta.Contains('Cooked')) { $Meta.Add('Cooked','True') }
     }
 
 	if (-not $Manifest.Contains('HostApps') -or -not $Manifest['HostApps']) {
