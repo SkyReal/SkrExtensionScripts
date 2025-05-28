@@ -73,6 +73,7 @@ function Update-PluginManifestFile {
     # Populate fields only if absent
     Set-Field Name          	$PluginName
     Set-Field DisplayName   	$UPluginJson.FriendlyName
+	Set-Field Description   	$UPluginJson.Description
     Set-Field Version       	$ShortVersion $true
 	Set-Field PackageCategory   "Extension"
 
