@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [switch]$ForceUpdate
+    [switch]$ForceUpdate,
+	[switch]$EditorManifest
 )
 
 # Load variables
@@ -111,26 +112,33 @@ function Update-PluginManifestFile {
 	# Handle PackageMetadatas: ensure ShowInExtensionList and Cooked
     if (-not $Manifest.Contains('PackageMetadatas') -or -not $Manifest['PackageMetadatas']) {
         $Manifest['PackageMetadatas'] = [ordered]@{
-            'ShowInExtensionList' = 'True'
+            'ShowInExtensionList' = 'true'
+			'IsEnabledByDefault' = 'false'
         }
     } else {
         $Meta = $Manifest['PackageMetadatas']
-        if (-not $Meta.Contains('ShowInExtensionList')) { $Meta.Add('ShowInExtensionList', 'True') }
+        if (-not $Meta.Contains('ShowInExtensionList')) { $Meta.Add('ShowInExtensionList', 'true') }
+		if (-not $Meta.Contains('IsEnabledByDefault')) { $Meta.Add('IsEnabledByDefault', 'false') }
     }
 
+	$HostAppName = 'SkyrealVR'
+	if($EditorManifest)
+	{
+		$HostAppName = 'Unreal'
+	}
+	
 	if (-not $Manifest.Contains('HostApps') -or -not $Manifest['HostApps']) {
         # Represent HostApps as a map of app names to version strings
         $Manifest['HostApps'] = [ordered]@{
-            'SkyrealVR' = $ShortVersion
+            $HostAppName = $ShortVersion
         }
     }
 	else
 	{
 		# Update existing SkyrealVR version
 		$HostApps = $Manifest['HostApps']
-        if ($HostApps.Contains('SkyrealVR')) {
-            $HostApps['SkyrealVR'] = $ShortVersion
-		}
+		$HostApps.Clear()
+		$HostApps[$HostAppName] = $ShortVersion
 	}
 
     Set-Field Description $UPluginJson.Description
