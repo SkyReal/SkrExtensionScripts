@@ -10,22 +10,40 @@ $ManifestExtension = '.skrmanifest'
 $UProjectfile      = $Variables.InputUnrealProject
 $UProjectPath      = (Get-Item $UProjectfile).Directory
 
-# Shorten version: trim wildcard and drop zero patch
-$RawVersion = $Variables.Version
-# Split into parts, remove trailing wildcard if present
-$VersionParts = ($RawVersion -split '\.') | Where-Object { $_ -ne '*' }
+function Get-VersionString {
+	param(
+        [Switch]$FullVersionString
+    )
+    $RawVersion = $Variables.FullVersion
 
-if ($VersionParts.Count -ge 3) {
-    # If patch is non-zero, include it; otherwise omit
-    if ($VersionParts[2] -ne '0') {
-        $ShortVersion = "$($VersionParts[0]).$($VersionParts[1]).$($VersionParts[2])"
-    } else {
-        $ShortVersion = "$($VersionParts[0]).$($VersionParts[1])"
-    }
-} elseif ($VersionParts.Count -ge 2) {
-    $ShortVersion = "$($VersionParts[0]).$($VersionParts[1])"
-} else {
-    $ShortVersion = $RawVersion
+    # 1. Split into parts and remove any "*" segments
+    $VersionParts = ($RawVersion -split '\.')
+
+    if ($VersionParts.Count -ge 4) {
+        # Expecting: Major.Minor.Patch.Build
+        $major  = $VersionParts[0]
+        $minor  = $VersionParts[1]
+        $patch  = [int]$VersionParts[2]
+        $build  = [int]$VersionParts[3]
+
+		$VersionOutput = "$major.$minor"
+		if($FullVersionString)
+		{
+			# Zero-pad:
+			#   patch → 2 digits, build → 3 digits
+			$patchPadded = $patch.ToString("00")
+			$buildPadded = $build.ToString("000")
+
+			# Combine as: major.minor.PPBBB
+			$VersionOutput = "$major.$minor.$patchPadded$buildPadded"
+		}
+		
+	}
+	else {
+		throw "Version not formated like XX.XX.XX.XX"
+	}
+    
+    return $VersionOutput
 }
 
 function Update-PluginManifestFile {
@@ -41,6 +59,9 @@ function Update-PluginManifestFile {
         Write-Warning "Cannot find .uplugin file at $UPluginFile. Skipping."
         return
     }
+	
+	$FullVersionString = Get-VersionString -FullVersionString
+	$ShortVersionString = Get-VersionString
 
     # Parse .uplugin JSON
     $UPluginJson = Get-Content $UPluginFile -Raw | ConvertFrom-Json
@@ -75,7 +96,7 @@ function Update-PluginManifestFile {
     Set-Field Name          	$PluginName
     Set-Field DisplayName   	$UPluginJson.FriendlyName
 	Set-Field Description   	$UPluginJson.Description
-    Set-Field Version       	$ShortVersion $true
+    Set-Field Version       	$FullVersionString $true
 	Set-Field PackageCategory   "Extension"
 
 	# Handle PackageDependencies: convert to map of Name->Version
@@ -84,7 +105,7 @@ function Update-PluginManifestFile {
         $depsMap = [ordered]@{}
         foreach ($Dep in $UPluginJson.Plugins) {
             if ($Variables.ExtensionsPlugins -contains $Dep.Name) {
-                $depsMap[$Dep.Name] = $ShortVersion
+                $depsMap[$Dep.Name] = $ShortVersionString
             }
         }
         $Manifest['PackageDependencies'] = $depsMap
@@ -97,13 +118,13 @@ function Update-PluginManifestFile {
         # Update existing entries
         foreach ($name in @($existingPD.Keys)) {
             if ($Variables.ExtensionsPlugins -contains $name) {
-                $existingPD[$name] = $ShortVersion
+                $existingPD[$name] = $ShortVersionString
             }
         }
         # Add any new dependencies from .uplugin
         foreach ($Dep in $UPluginJson.Plugins) {
             if ($Variables.ExtensionsPlugins -contains $Dep.Name -and -not $existingPD.Contains($Dep.Name)) {
-                $existingPD[$Dep.Name] = $ShortVersion
+                $existingPD[$Dep.Name] = $ShortVersionString
             }
         }
         $Manifest['PackageDependencies'] = $existingPD
@@ -130,7 +151,7 @@ function Update-PluginManifestFile {
 	if (-not $Manifest.Contains('HostApps') -or -not $Manifest['HostApps']) {
         # Represent HostApps as a map of app names to version strings
         $Manifest['HostApps'] = [ordered]@{
-            $HostAppName = $ShortVersion
+            $HostAppName = $ShortVersionString
         }
     }
 	else
@@ -138,7 +159,7 @@ function Update-PluginManifestFile {
 		# Update existing SkyrealVR version
 		$HostApps = $Manifest['HostApps']
 		$HostApps.Clear()
-		$HostApps[$HostAppName] = $ShortVersion
+		$HostApps[$HostAppName] = $ShortVersionString
 	}
 
     Set-Field Description $UPluginJson.Description
