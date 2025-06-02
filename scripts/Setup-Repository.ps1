@@ -12,4 +12,4 @@ if($SkipExtraction -eq $false)
 & (Join-Path $PSScriptRoot Setup-SymLinks.ps1)
 
 # create SkrManifest files if they don't exist
-& (Join-Path $PSScriptRoot .\Create-Update-SkrManifest.ps1)
+& (Join-Path $PSScriptRoot .\Create-Update-SkrManifest.ps1 -ForceUpdate)
