@@ -150,7 +150,7 @@ else
 	
 	# Update existing entries
 	foreach ($name in @($existingPD.Keys)) {
-		if ($Variables.ExtensionsPlugins -contains $name) {
+		if ($DependencyWhiteList -contains $name) {
 			$existingPD[$name] = $ShortVersionString
 		}
 	}
