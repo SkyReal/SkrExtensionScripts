@@ -19,11 +19,17 @@ $OutputInstallDir = $Variables.OutputInstallDir
 $CompanyName = $Variables.CompanyName
 $AdditionalInstallersScripts = $Variables.AdditionalInstallersScripts
 
+$Plugins = $Variables.ExtensionsPlugins
+$OutputEditor = $Variables.OutputEditor
+$UProjectfile = $Variables.InputUnrealProject
+$UProjectPath = (Get-Item $UProjectfile).Directory
+
 $RepositoryPath = Resolve-Path (Join-Path $PSScriptRoot "..")
 $ExtensionInstallerSourcePath = (Join-Path (Join-Path $RepositoryPath "installers") "src")
 $SkrAppBaseFileName = $InstallerName + " " + $Version
 $SkrAppZipFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".zip"))
 $SkrAppFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".skrapp"))
+$EditorZipFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + "_Editor.zip"))
 
 Write-Host "Clean and recreate output directory $OutputInstallDir"
 If (Test-Path -Path $OutputInstallDir)
@@ -36,6 +42,23 @@ Write-Host "Create skrapp file"
 $filesToCompress = Get-ChildItem -Path $OutputBuildDir -Exclude *.skrlnk
 Compress-Archive -Path $filesToCompress.FullName -DestinationPath $SkrAppZipFilePath -Force
 Move-Item -Path $SkrAppZipFilePath -Destination $SkrAppFilePath
+
+if($OutputEditor)
+{
+	# Update editor manifest
+	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -EditorManifest $true
+	
+	Push-Location (Join-Path $UProjectPath "Plugins")
+
+	foreach ($Plugin in $Plugins)
+	{
+		$relativePluginPath = "./$Plugin"
+		Compress-Archive -Path $relativePluginPath -DestinationPath $EditorZipFilePath -Update
+	}
+	
+	Pop-Location
+}
+
 
 Add-Type -assembly "system.io.compression.filesystem"
 $Archive = [io.compression.zipfile]::OpenRead($SkrAppFilePath)

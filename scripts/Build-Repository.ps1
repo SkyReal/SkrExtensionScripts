@@ -1,4 +1,5 @@
+# Update manifests to include build version
+& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true
 
-$RepositoryPath = Resolve-Path (Join-Path $PSScriptRoot "..")
 & (Join-Path $PSScriptRoot Build-UEExtension.ps1)
 & (Join-Path $PSScriptRoot Build-Installer.ps1)

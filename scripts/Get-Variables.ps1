@@ -67,6 +67,16 @@ foreach ($hook in $VariablesDocument.Hooks) {
     }
 }
 
+if (-not $VariablesDocument.PSObject.Properties['OutputEditor']) {
+    $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'OutputEditor' -Value $false
+} else {
+    $value = $VariablesDocument.OutputEditor.ToString().ToLower()
+    if ($value -eq "true" -or $value -eq "`$true") {
+        $VariablesDocument.OutputEditor = $true
+    } else {
+        $VariablesDocument.OutputEditor = $false
+    }
+}
 if (-not $VariablesDocument.PSObject.Properties['FullVersion']) {
     $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'FullVersion' -Value "0.0.0.0"
 }
