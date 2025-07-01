@@ -63,7 +63,14 @@ FunctionEnd
 
 Function InstallOptionPage
   ${If} $IsUninstall = 1
-	Abort        ; don’t show the checkbox during uninstall
+	Return        ; don’t show the checkbox during uninstall
+  ${EndIf}
+  
+  ReadRegStr $MarketplaceScanPath HKCU "$MarketplaceScanPathRegKeyPath" "$MarketplaceScanPathRegKeyValue"
+  ${If} $MarketplaceScanPath == ""
+  ${OrIfNot} ${FileExists} $MarketplaceScanPath
+	StrCpy $InstallToMarketplaceFlag 0
+    Return       ; don’t show the checkbox if Marketplace path not found
   ${EndIf}
 	
   nsDialogs::Create 1018
@@ -111,6 +118,14 @@ Section "install"
 		ReadRegStr $MarketplaceScanPath HKCU "$MarketplaceScanPathRegKeyPath" "$MarketplaceScanPathRegKeyValue"
 		${If} $MarketplaceScanPath != ""
 		${AndIf} ${FileExists} $MarketplaceScanPath
+			; 2) Are we already running from *inside* that directory?
+			StrLen $R0 $MarketplaceScanPath          ; get length of marketplace path
+			StrCpy $R1 $EXEDIR $R0                   ; grab that many chars from $EXEDIR
+			${If} $R1 == $MarketplaceScanPath
+				DetailPrint "Installer already in marketplace dir, skipping copy"
+				Return
+			${EndIf}
+		
 		    DetailPrint "Installing extension to marketplace"
 			
 			Delete "$MarketplaceScanPath\$MarketplaceScanningFile"
@@ -219,7 +234,7 @@ Section "Uninstall"
     SetRegView 64
 
     Delete $ExtensionJSonFileLocation
-    Delete $UninstallExecutable
     RMDir /r $UninstallLocation
     DeleteRegKey HKLM "$UninstallRegKeyPath"
+	Delete "$UninstallExecutable"
 SectionEnd

@@ -31,33 +31,33 @@ $SkrAppZipFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".zip")
 $SkrAppFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".skrapp"))
 $EditorZipFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + "_Editor.zip"))
 
-#Write-Host "Clean and recreate output directory $OutputInstallDir"
-#If (Test-Path -Path $OutputInstallDir)
-#{
-#	Remove-Item -path $OutputInstallDir -Force -Recurse
-#}
-#New-Item -Path $OutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
-#
-#Write-Host "Create skrapp file"
-#$filesToCompress = Get-ChildItem -Path $OutputBuildDir -Exclude *.skrlnk
-#Compress-Archive -Path $filesToCompress.FullName -DestinationPath $SkrAppZipFilePath -Force
-#Move-Item -Path $SkrAppZipFilePath -Destination $SkrAppFilePath
-#
-#if($OutputEditor)
-#{
-#	# Update editor manifest
-#	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -EditorManifest $true
-#	
-#	Push-Location (Join-Path $UProjectPath "Plugins")
-#
-#	foreach ($Plugin in $Plugins)
-#	{
-#		$relativePluginPath = "./$Plugin"
-#		Compress-Archive -Path $relativePluginPath -DestinationPath $EditorZipFilePath -Update
-#	}
-#	
-#	Pop-Location
-#}
+Write-Host "Clean and recreate output directory $OutputInstallDir"
+If (Test-Path -Path $OutputInstallDir)
+{
+	Remove-Item -path $OutputInstallDir -Force -Recurse
+}
+New-Item -Path $OutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
+
+Write-Host "Create skrapp file"
+$filesToCompress = Get-ChildItem -Path $OutputBuildDir -Exclude *.skrlnk
+Compress-Archive -Path $filesToCompress.FullName -DestinationPath $SkrAppZipFilePath -Force
+Move-Item -Path $SkrAppZipFilePath -Destination $SkrAppFilePath
+
+if($OutputEditor)
+{
+	# Update editor manifest
+	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -EditorManifest $true
+	
+	Push-Location (Join-Path $UProjectPath "Plugins")
+
+	foreach ($Plugin in $Plugins)
+	{
+		$relativePluginPath = "./$Plugin"
+		Compress-Archive -Path $relativePluginPath -DestinationPath $EditorZipFilePath -Update
+	}
+	
+	Pop-Location
+}
 
 
 Add-Type -assembly "system.io.compression.filesystem"
