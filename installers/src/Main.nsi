@@ -7,6 +7,8 @@
 !include "AllowSingleInstance.nsh"
 !include "UninstallPreviousVersion.nsh"
 !include "ReadRegStrAndTrim.nsh"
+!include "nsDialogs.nsh"
+!include "LogicLib.nsh"
 
 Unicode true
 Name "${PRODUCT_NAME}"
@@ -21,7 +23,10 @@ ShowUninstDetails show
 !define MUI_ICON "Assets/favicon.ico"
 !define MUI_UNICON "Assets/favicon.ico"
 
-!insertmacro MUI_PAGE_DIRECTORY
+Page custom InstallOptionPage InstallOptionPageLeave
+
+Page directory SkipInstallDirPage
+
 !insertmacro MUI_PAGE_INSTFILES
 
 # !define MUI_FINISHPAGE_NOAUTOCLOSE
@@ -32,15 +37,20 @@ ShowUninstDetails show
 # !insertmacro MUI_PAGE_FINISH
 
 !insertmacro MUI_UNPAGE_INSTFILES
-
 !insertmacro MUI_LANGUAGE "English"
 
+Var InstallToMarketplaceFlag
+Var MarketplaceCheckboxHandle
+Var IsUninstall
 
 function .onInit
     !insertmacro InitializeVariables ""
     !insertmacro ShowVariables
     !insertmacro AllowSingleInstance
     !insertmacro UninstallPreviousVersion
+	
+	StrCpy $InstallToMarketplaceFlag 1
+	StrCpy $IsUninstall 0
 
     ${IfNot} ${FileExists} "$EXEDIR\$AppPackageName"
         MessageBox MB_OK|MB_ICONSTOP "Application package not found" /SD IDOK
@@ -49,7 +59,38 @@ function .onInit
     ${EndIf}
 
     SectionSetSize 0 "$AppPackageUncompressedSize"
-functionEnd
+FunctionEnd
+
+Function InstallOptionPage
+  ${If} $IsUninstall = 1
+	Abort        ; don’t show the checkbox during uninstall
+  ${EndIf}
+	
+  nsDialogs::Create 1018
+  Pop $0
+  ${If} $0 == error
+    Abort
+  ${EndIf}
+
+  ${NSD_CreateCheckbox} 0u 10u 100% 12u "Install To Marketplace?"
+  Pop $MarketplaceCheckboxHandle
+  ${NSD_Check} $MarketplaceCheckboxHandle  ; default = checked
+
+  nsDialogs::Show
+FunctionEnd
+
+Function InstallOptionPageLeave
+  ${NSD_GetState} $MarketplaceCheckboxHandle $InstallToMarketplaceFlag
+  DetailPrint ">>> Checkbox state is now: $InstallToMarketplaceFlag"
+FunctionEnd
+
+;── 2) Directory page, with a PRE-hook to skip if flag=1 ──────────────────────────
+Function SkipInstallDirPage
+    DetailPrint ">>> SkipInstallDirPage sees flag = $InstallToMarketplaceFlag"
+    ${If} $InstallToMarketplaceFlag = 1
+        Abort    ; aborting this function skips the directory page
+    ${EndIf}
+FunctionEnd
 
 VIProductVersion "${PRODUCT_VERSION}"
 VIAddVersionKey /LANG=1033 "ProductName" "${PRODUCT_NAME}"
@@ -61,11 +102,47 @@ VIAddVersionKey /LANG=1033 "FileVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey /LANG=1033 "OriginalFilename" "${PRODUCT_NAME}.exe"
 VIAddVersionKey /LANG=1033 "InternalName" "${PRODUCT_NAME}"
 VIAddVersionKey /LANG=1033 "Comments" "${PRODUCT_UPGRADE_CODE}"
-	
+    
 Section "install"
-	ClearErrors
+    ClearErrors
     !insertmacro ShowVariables
-    !insertmacro Prepare7zip
+	
+	${If} $InstallToMarketplaceFlag = 1
+		ReadRegStr $MarketplaceScanPath HKCU "$MarketplaceScanPathRegKeyPath" "$MarketplaceScanPathRegKeyValue"
+		${If} $MarketplaceScanPath != ""
+		${AndIf} ${FileExists} $MarketplaceScanPath
+		    DetailPrint "Installing extension to marketplace"
+			
+			Delete "$MarketplaceScanPath\$MarketplaceScanningFile"
+			
+			Rename "$EXEDIR\$AppPackageName" "$MarketplaceScanPath\$AppPackageName"
+			
+			${If} ${FileExists} "$EXEDIR\$EditorPackageName"
+				Rename "$EXEDIR\$EditorPackageName" "$MarketplaceScanPath\$EditorPackageName"
+			${EndIf}
+			
+			${If} ${Errors}
+				MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install to marketplace $MarketplaceScanPath"
+				Abort
+			${EndIf}
+			
+			FileOpen $0 "$MarketplaceScanPath\$MarketplaceScanningFile" w
+			${If} ${Errors}
+				MessageBox MB_OK|MB_ICONEXCLAMATION "Can't write MarketplaceScanningFile"
+				Abort
+			${EndIf}
+			FileWrite $0 "."
+			FileClose $0
+			
+			Return
+		${Else}	
+			${IfNot} ${Silent}
+				MessageBox MB_OK "Failed to find MarketplaceScanPath $MarketplaceScanPath, defaulting to regular install"
+			${EndIf}
+		${EndIf}
+	${EndIf}
+	
+	!insertmacro Prepare7zip
 
     SetOutPath "$INSTDIR"
 
@@ -110,11 +187,13 @@ SectionEnd
 function un.onInit
 	SetShellVarContext all
     SetRegView 64
+	
+	StrCpy $IsUninstall 0
+	
     !insertmacro InitializeVariables "un."
     !insertmacro ShowVariables
     !insertmacro AllowSingleInstance
 
-		
     !insertmacro ReadRegStrAndTrim $UninstallLocation "$UninstallRegKeyPath" "InstallLocation"
     !insertmacro ReadRegStrAndTrim $UninstallExecutable "$UninstallRegKeyPath" "UninstallString"
 
@@ -138,12 +217,9 @@ functionEnd
 Section "Uninstall"
     !insertmacro ShowVariables
     SetRegView 64
-	
+
     Delete $ExtensionJSonFileLocation
-	
     Delete $UninstallExecutable
-
     RMDir /r $UninstallLocation
-
     DeleteRegKey HKLM "$UninstallRegKeyPath"
 SectionEnd

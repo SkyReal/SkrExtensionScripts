@@ -49,6 +49,11 @@ Var /GLOBAL UninstallLocation
 Var /GLOBAL UninstallExecutable
 Var /GLOBAL AppPackageName
 Var /GLOBAL AppPackageUncompressedSize
+Var /GLOBAL EditorPackageName
+Var /GLOBAL MarketplaceScanPathRegKeyPath
+Var /GLOBAL MarketplaceScanPathRegKeyValue
+Var /GLOBAL MarketplaceScanPath
+Var /GLOBAL MarketplaceScanningFile
 
 !macro InitializeVariables un
     SetRegView 64
@@ -64,6 +69,7 @@ Var /GLOBAL AppPackageUncompressedSize
     StrCpy $CompanyName "${COMPANY_NAME}"
     StrCpy $CompanyHelpLink "https://sky-real.com/"
     StrCpy $InstallDate "${INSTALL_DATE}"
+	StrCpy $EditorPackageName "${PRODUCT_NAME} ${PRODUCT_VERSION}_Editor.zip"
 
 	
 	StrCpy $ExtensionJSonDirectoryLocation "$COMMONPROGRAMDATA\Skydea\skyrealvr\$SkyRealVersion\extensions"
@@ -91,6 +97,10 @@ Var /GLOBAL AppPackageUncompressedSize
 
     StrCpy $UninstallRegKeyPath "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ProductUpgradeCode"
     StrCpy $INSTDIR "$InstallLocation"
+	
+	StrCpy $MarketplaceScanPathRegKeyPath "Software\Skydea"
+	StrCpy $MarketplaceScanPathRegKeyValue "MarketplaceScanDirectoryPath"
+	StrCpy $MarketplaceScanningFile ".ToScan"
 
 !macroend
 
