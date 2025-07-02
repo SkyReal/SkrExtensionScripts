@@ -161,10 +161,11 @@ Section "install"
 
     SetOutPath "$INSTDIR"
 
+	ClearErrors
     DetailPrint "Installing extension package"
-    nsExec::ExecToLog '"$PLUGINSDIR\7z\7z.exe" x -bb1 -o"$INSTDIR" "$EXEDIR\$AppPackageName"'
+    ExecWait  '"$PLUGINSDIR\7z\7z.exe" x -bb1 -o"$INSTDIR" "$EXEDIR\$AppPackageName"' $R0
 	${If} ${Errors}
-		MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to extract skrapp to $INSTDIR"
+		MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to extract skrapp to $INSTDIR : $R0"
         Abort
 	${EndIf}
 
