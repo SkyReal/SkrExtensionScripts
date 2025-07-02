@@ -130,10 +130,10 @@ Section "install"
 			
 			Delete "$MarketplaceScanPath\$MarketplaceScanningFile"
 			
-			Rename "$EXEDIR\$AppPackageName" "$MarketplaceScanPath\$AppPackageName"
+			CopyFiles /SILENT "$EXEDIR\$AppPackageName" "$MarketplaceScanPath\"
 			
 			${If} ${FileExists} "$EXEDIR\$EditorPackageName"
-				Rename "$EXEDIR\$EditorPackageName" "$MarketplaceScanPath\$EditorPackageName"
+				CopyFiles /SILENT "$EXEDIR\$EditorPackageName" "$MarketplaceScanPath\"
 			${EndIf}
 			
 			${If} ${Errors}
