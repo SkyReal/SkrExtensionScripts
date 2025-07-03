@@ -123,22 +123,21 @@ Section "install"
 			StrCpy $R1 $EXEDIR $R0                   ; grab that many chars from $EXEDIR
 			${If} $R1 == $MarketplaceScanPath
 				DetailPrint "Installer already in marketplace dir, skipping copy"
-				Return
-			${EndIf}
-		
-		    DetailPrint "Installing extension to marketplace"
-			
-			Delete "$MarketplaceScanPath\$MarketplaceScanningFile"
-			
-			CopyFiles /SILENT "$EXEDIR\$AppPackageName" "$MarketplaceScanPath\"
-			
-			${If} ${FileExists} "$EXEDIR\$EditorPackageName"
-				CopyFiles /SILENT "$EXEDIR\$EditorPackageName" "$MarketplaceScanPath\"
-			${EndIf}
-			
-			${If} ${Errors}
-				MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install to marketplace $MarketplaceScanPath"
-				Abort
+			${Else}
+				DetailPrint "Installing extension to marketplace"
+				
+				Delete "$MarketplaceScanPath\$MarketplaceScanningFile"
+				
+				CopyFiles /SILENT "$EXEDIR\$AppPackageName" "$MarketplaceScanPath\"
+				
+				${If} ${FileExists} "$EXEDIR\$EditorPackageName"
+					CopyFiles /SILENT "$EXEDIR\$EditorPackageName" "$MarketplaceScanPath\"
+				${EndIf}
+				
+				${If} ${Errors}
+					MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install to marketplace $MarketplaceScanPath"
+					Abort
+				${EndIf}
 			${EndIf}
 			
 			FileOpen $0 "$MarketplaceScanPath\$MarketplaceScanningFile" w
