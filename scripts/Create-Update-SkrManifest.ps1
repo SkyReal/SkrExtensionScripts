@@ -193,25 +193,20 @@ if (-not $Manifest.Contains('PackageMetadatas') -or -not $Manifest['PackageMetad
 	}
 }
 
-$HostAppName = 'SkyrealVR'
-if($EditorManifest)
-{
-	$HostAppName = 'Unreal'
-}
-
-if (-not $Manifest.Contains('HostApps') -or -not $Manifest['HostApps']) {
-	# Represent HostApps as a map of app names to version strings
-	$Manifest['HostApps'] = [ordered]@{
-		$HostAppName = $ShortVersionString
-	}
-}
-else
-{
-	# Update existing SkyrealVR version
+if ($Manifest.Contains('HostApps')) {
 	$HostApps = $Manifest['HostApps']
 	$HostApps.Clear()
-	$HostApps[$HostAppName] = $ShortVersionString
+	$Manifest.Remove('HostApps')
 }
+
+$TargetPlatform = 'Skyreal'
+if($EditorManifest)
+{
+	$TargetPlatform = 'Unreal'
+}
+
+Set-Field TargetPlatform $TargetPlatform $true
+Set-Field PlatformVersion $ShortVersionString $true
 
 Set-Field Description $UPluginJson.Description
 Set-Field Author      $UPluginJson.CreatedBy
