@@ -193,12 +193,6 @@ if (-not $Manifest.Contains('PackageMetadatas') -or -not $Manifest['PackageMetad
 	}
 }
 
-if ($Manifest.Contains('HostApps')) {
-	$HostApps = $Manifest['HostApps']
-	$HostApps.Clear()
-	$Manifest.Remove('HostApps')
-}
-
 $TargetPlatform = 'Skyreal'
 if($EditorManifest)
 {
