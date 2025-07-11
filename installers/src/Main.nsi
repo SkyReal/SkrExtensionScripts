@@ -9,6 +9,7 @@
 !include "ReadRegStrAndTrim.nsh"
 !include "nsDialogs.nsh"
 !include "LogicLib.nsh"
+!include "StrFunc.nsh"
 
 Unicode true
 Name "${PRODUCT_NAME}"
@@ -61,34 +62,80 @@ function .onInit
     SectionSetSize 0 "$AppPackageUncompressedSize"
 FunctionEnd
 
-Function InstallOptionPage
-  ${If} $IsUninstall = 1
-	Return        ; don’t show the checkbox during uninstall
-  ${EndIf}
-  
-  ReadRegStr $MarketplaceScanPath HKCU "$MarketplaceScanPathRegKeyPath" "$MarketplaceScanPathRegKeyValue"
-  ${If} $MarketplaceScanPath == ""
-  ${OrIfNot} ${FileExists} $MarketplaceScanPath
-	StrCpy $InstallToMarketplaceFlag 0
-    Return       ; don’t show the checkbox if Marketplace path not found
-  ${EndIf}
+${Using:StrFunc} StrStr
+Var XRCenterLocation
+Var ExitCode
+Var Output
+Var ScanDirectoryPathStart
+Var ScanDirectoryPathEnd
+Var LenToScanDirectoryPathStart
+Var LenToScanDirectoryPathEnd
+
+Function SearchMarketplace
+  	ReadRegStr $XRCenterLocation HKLM "$XRCenterServiceRegKeyPath" "$XRCenterServiceRegKeyKey"
 	
-  nsDialogs::Create 1018
-  Pop $0
-  ${If} $0 == error
-    Abort
-  ${EndIf}
+    ${IfNot} ${FileExists} $XRCenterLocation
+	    DetailPrint "Failed to find XRCenter location"
+        Return
+    ${EndIf}
+  
+    nsExec::ExecToStack '"$XRCenterLocation" $XRCenterScanPathArgument'
+	Pop $ExitCode
+	${IfNot} $ExitCode == 0
+		DetailPrint "Failed to find XRCenter location"
+        Return
+	${EndIf}
 
-  ${NSD_CreateCheckbox} 0u 10u 100% 12u "Install To Marketplace?"
-  Pop $MarketplaceCheckboxHandle
-  ${NSD_Check} $MarketplaceCheckboxHandle  ; default = checked
+    Pop $Output
+    ${StrStr} $ScanDirectoryPathStart $Output $MarketplaceScanDirectoryPathSearchedValue
+    ${If} $ScanDirectoryPathStart == -1
+		DetailPrint "Failed to find ScanDirectoryPath"
+        Return
+  	${EndIf}
+  	
+  	${StrStr} $ScanDirectoryPathEnd $ScanDirectoryPathStart "]"
+  	${If} $ScanDirectoryPathEnd == -1
+  		DetailPrint "Failed to find ScanDirectoryPath"
+		Return
+  	${EndIf}
+  
+  	StrLen $LenToScanDirectoryPathStart $MarketplaceScanDirectoryPathSearchedValue
+  	StrLen $LenToScanDirectoryPathEnd $ScanDirectoryPathEnd
+  	StrCpy $MarketplaceScanDirectoryPathValue $ScanDirectoryPathStart -$LenToScanDirectoryPathEnd $LenToScanDirectoryPathStart
 
-  nsDialogs::Show
+	${IfNot} ${FileExists} $MarketplaceScanDirectoryPathValue
+		DetailPrint "ScanDirectoryPath is not valid"
+		StrCpy $MarketplaceScanDirectoryPathValue ""
+	${EndIf}
+FunctionEnd
+
+Function InstallOptionPage
+    ${If} $IsUninstall = 1
+  	Return        ; don’t show the checkbox during uninstall
+    ${EndIf}
+	
+    Call SearchMarketplace
+    ${If} $MarketplaceScanDirectoryPathValue == ""
+  	StrCpy $InstallToMarketplaceFlag 0
+      Return       ; don’t show the checkbox if Marketplace path not found
+    ${EndIf}
+  	
+    nsDialogs::Create 1018
+    Pop $0
+    ${If} $0 == error
+      Abort
+    ${EndIf}
+  
+    ${NSD_CreateCheckbox} 0u 10u 100% 12u "Install To Marketplace?"
+    Pop $MarketplaceCheckboxHandle
+    ${NSD_Check} $MarketplaceCheckboxHandle  ; default = checked
+  
+    nsDialogs::Show
 FunctionEnd
 
 Function InstallOptionPageLeave
-  ${NSD_GetState} $MarketplaceCheckboxHandle $InstallToMarketplaceFlag
-  DetailPrint ">>> Checkbox state is now: $InstallToMarketplaceFlag"
+    ${NSD_GetState} $MarketplaceCheckboxHandle $InstallToMarketplaceFlag
+    DetailPrint ">>> Checkbox state is now: $InstallToMarketplaceFlag"
 FunctionEnd
 
 ;── 2) Directory page, with a PRE-hook to skip if flag=1 ──────────────────────────
@@ -109,51 +156,48 @@ VIAddVersionKey /LANG=1033 "FileVersion" "${PRODUCT_VERSION}"
 VIAddVersionKey /LANG=1033 "OriginalFilename" "${PRODUCT_NAME}.exe"
 VIAddVersionKey /LANG=1033 "InternalName" "${PRODUCT_NAME}"
 VIAddVersionKey /LANG=1033 "Comments" "${PRODUCT_UPGRADE_CODE}"
-    
+
 Section "install"
     ClearErrors
     !insertmacro ShowVariables
 	
-	${If} $InstallToMarketplaceFlag = 1
-		ReadRegStr $MarketplaceScanPath HKCU "$MarketplaceScanPathRegKeyPath" "$MarketplaceScanPathRegKeyValue"
-		${If} $MarketplaceScanPath != ""
-		${AndIf} ${FileExists} $MarketplaceScanPath
-			; 2) Are we already running from *inside* that directory?
-			StrLen $R0 $MarketplaceScanPath          ; get length of marketplace path
-			StrCpy $R1 $EXEDIR $R0                   ; grab that many chars from $EXEDIR
-			${If} $R1 == $MarketplaceScanPath
-				DetailPrint "Installer already in marketplace dir, skipping copy"
-			${Else}
-				DetailPrint "Installing extension to marketplace"
-				
-				Delete "$MarketplaceScanPath\$MarketplaceScanningFile"
-				
-				CopyFiles /SILENT "$EXEDIR\$AppPackageName" "$MarketplaceScanPath\"
-				
-				${If} ${FileExists} "$EXEDIR\$EditorPackageName"
-					CopyFiles /SILENT "$EXEDIR\$EditorPackageName" "$MarketplaceScanPath\"
-				${EndIf}
-				
-				${If} ${Errors}
-					MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install to marketplace $MarketplaceScanPath"
-					Abort
-				${EndIf}
+	${If} ${Silent}
+		Call SearchMarketplace
+	${EndIf}
+	
+	${If} $InstallToMarketplaceFlag == 1
+	${AndIfNot} $MarketplaceScanDirectoryPathValue == ""
+		; 2) Are we already running from *inside* that directory?
+		StrLen $R0 $MarketplaceScanDirectoryPathValue          ; get length of marketplace path
+		StrCpy $R1 $EXEDIR $R0                   ; grab that many chars from $EXEDIR
+		${If} $R1 == $MarketplaceScanDirectoryPathValue
+			DetailPrint "Installer already in marketplace dir, skipping copy"
+		${Else}
+			DetailPrint "Installing extension to marketplace"
+			
+			Delete "$MarketplaceScanDirectoryPathValue\$MarketplaceScanningFile"
+			
+			CopyFiles /SILENT "$EXEDIR\$AppPackageName" "$MarketplaceScanDirectoryPathValue\"
+			
+			${If} ${FileExists} "$EXEDIR\$EditorPackageName"
+				CopyFiles /SILENT "$EXEDIR\$EditorPackageName" "$MarketplaceScanDirectoryPathValue\"
 			${EndIf}
 			
-			FileOpen $0 "$MarketplaceScanPath\$MarketplaceScanningFile" w
 			${If} ${Errors}
-				MessageBox MB_OK|MB_ICONEXCLAMATION "Can't write MarketplaceScanningFile"
+				MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to install to marketplace $MarketplaceScanDirectoryPathValue"
 				Abort
 			${EndIf}
-			FileWrite $0 "."
-			FileClose $0
-			
-			Return
-		${Else}	
-			${IfNot} ${Silent}
-				MessageBox MB_OK "Failed to find MarketplaceScanPath $MarketplaceScanPath, defaulting to regular install"
-			${EndIf}
 		${EndIf}
+		
+		FileOpen $0 "$MarketplaceScanDirectoryPathValue\$MarketplaceScanningFile" w
+		${If} ${Errors}
+			MessageBox MB_OK|MB_ICONEXCLAMATION "Can't write MarketplaceScanningFile"
+			Abort
+		${EndIf}
+		FileWrite $0 "."
+		FileClose $0
+		
+		Return
 	${EndIf}
 	
 	!insertmacro Prepare7zip

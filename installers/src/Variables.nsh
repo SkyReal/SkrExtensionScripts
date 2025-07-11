@@ -50,10 +50,13 @@ Var /GLOBAL UninstallExecutable
 Var /GLOBAL AppPackageName
 Var /GLOBAL AppPackageUncompressedSize
 Var /GLOBAL EditorPackageName
-Var /GLOBAL MarketplaceScanPathRegKeyPath
-Var /GLOBAL MarketplaceScanPathRegKeyValue
-Var /GLOBAL MarketplaceScanPath
+Var /GLOBAL XRCenterServiceRegKeyPath
+Var /GLOBAL XRCenterServiceRegKeyKey
+Var /GLOBAL XRCenterScanPathArgument
+Var /GLOBAL MarketplaceScanDirectoryPathSearchedValue
+Var /GLOBAL MarketplaceScanDirectoryPathValue
 Var /GLOBAL MarketplaceScanningFile
+
 
 !macro InitializeVariables un
     SetRegView 64
@@ -98,8 +101,11 @@ Var /GLOBAL MarketplaceScanningFile
     StrCpy $UninstallRegKeyPath "Software\Microsoft\Windows\CurrentVersion\Uninstall\$ProductUpgradeCode"
     StrCpy $INSTDIR "$InstallLocation"
 	
-	StrCpy $MarketplaceScanPathRegKeyPath "Software\Skydea"
-	StrCpy $MarketplaceScanPathRegKeyValue "MarketplaceScanDirectoryPath"
+	StrCpy $XRCenterServiceRegKeyPath "SYSTEM\CurrentControlSet\Services\skydea.xrcenter.Default"
+	StrCpy $XRCenterServiceRegKeyKey "ImagePath"
+	StrCpy $XRCenterScanPathArgument "marketplace scan_path"
+	StrCpy $MarketplaceScanDirectoryPathSearchedValue "ScanDirectoryPath: ["
+	StrCpy $MarketplaceScanDirectoryPathValue ""
 	StrCpy $MarketplaceScanningFile ".ToScan"
 
 !macroend
