@@ -55,7 +55,7 @@ function Get-VersionString {
 			# Zero-pad:
 			#   patch → 2 digits, build → 3 digits
 			$patchPadded = $patch.ToString("00")
-			$buildPadded = $build.ToString("000")
+			$buildPadded = $build.ToString("0000")
 
 			# Combine as: major.minor.PPBBB
 			$VersionOutput = "$major.$minor.$patchPadded$buildPadded"
