@@ -24,8 +24,7 @@ ShowUninstDetails show
 !define MUI_ICON "Assets/favicon.ico"
 !define MUI_UNICON "Assets/favicon.ico"
 
-Page custom InstallOptionPage InstallOptionPageLeave
-
+Page custom RadioPageCreate RadioPageLeave
 Page directory SkipInstallDirPage
 
 !insertmacro MUI_PAGE_INSTFILES
@@ -41,7 +40,6 @@ Page directory SkipInstallDirPage
 !insertmacro MUI_LANGUAGE "English"
 
 Var InstallToMarketplaceFlag
-Var MarketplaceCheckboxHandle
 Var IsUninstall
 
 function .onInit
@@ -106,41 +104,69 @@ Function SearchMarketplace
 	${IfNot} ${FileExists} $MarketplaceScanDirectoryPathValue
 		DetailPrint "ScanDirectoryPath is not valid"
 		StrCpy $MarketplaceScanDirectoryPathValue ""
+	${Else}
+		DetailPrint "ScanDirectoryPath is not valid"
+		StrCpy $MarketplaceHasScanDirectory 1
 	${EndIf}
 FunctionEnd
 
-Function InstallOptionPage
-    ${If} $IsUninstall = 1
-  	Return        ; don’t show the checkbox during uninstall
-    ${EndIf}
+;–––––––––––––––––––––––––––––––––––––––––––––––
+;  Variables to hold dialog handles and selection
+Var Dialog
+Var Radio1
+Var Radio2
+
+;–––––––––––––––––––––––––––––––––––––––––––––––
+Function RadioPageCreate
+  ${If} ${Silent}
+  ${ElseIf} $IsUninstall == 1
+	Return
+  ${EndIf}
 	
-    Call SearchMarketplace
-    ${If} $MarketplaceScanDirectoryPathValue == ""
-  	StrCpy $InstallToMarketplaceFlag 0
-      Return       ; don’t show the checkbox if Marketplace path not found
-    ${EndIf}
-  	
-    nsDialogs::Create 1018
-    Pop $0
-    ${If} $0 == error
-      Abort
-    ${EndIf}
+  Call SearchMarketplace
+
+  nsDialogs::Create 1018             ; 1018 = WM_USER for Modern UI
+  Pop $Dialog
+  ${If} $Dialog == error
+    Abort
+  ${EndIf}
+
+  ; Label
+  ${NSD_CreateLabel} 0u 10u 100% 12u "Choose installation type:"
+  Pop $0        ; throw away control handle
+
+  ; Radio buttons (auto‐group starts with the first one)
+  ${NSD_CreateRadioButton} 20u 30u 100% 12u "Marketplace"
+  Pop $Radio1
+  ${NSD_CreateRadioButton} 20u 46u 100% 12u "Legacy"
+  Pop $Radio2
   
-    ${NSD_CreateCheckbox} 0u 10u 100% 12u "Install To Marketplace?"
-    Pop $MarketplaceCheckboxHandle
-    ${NSD_Check} $MarketplaceCheckboxHandle  ; default = checked
-  
-    nsDialogs::Show
+  ${If} $MarketplaceHasScanDirectory == 1
+	${NSD_SetState} $Radio1 ${BST_CHECKED}
+  ${Else}
+    System::Call 'user32::EnableWindow(i $Radio1, i 0) i .r0'
+	${NSD_SetState} $Radio2 ${BST_CHECKED}
+  ${EndIf}
+
+  nsDialogs::Show
 FunctionEnd
 
-Function InstallOptionPageLeave
-    ${NSD_GetState} $MarketplaceCheckboxHandle $InstallToMarketplaceFlag
-    DetailPrint ">>> Checkbox state is now: $InstallToMarketplaceFlag"
+;–––––––––––––––––––––––––––––––––––––––––––––––
+Function RadioPageLeave
+  ; Determine which button is checked
+  ${NSD_GetState} $Radio1 $0
+  ${If} $0 == ${BST_CHECKED}
+    StrCpy $InstallToMarketplaceFlag 1
+  ${Else}
+    ${NSD_GetState} $Radio2 $0
+    ${If} $0 == ${BST_CHECKED}
+      StrCpy $InstallToMarketplaceFlag 0
+    ${EndIf}
+  ${EndIf}
 FunctionEnd
 
 ;── 2) Directory page, with a PRE-hook to skip if flag=1 ──────────────────────────
 Function SkipInstallDirPage
-    DetailPrint ">>> SkipInstallDirPage sees flag = $InstallToMarketplaceFlag"
     ${If} $InstallToMarketplaceFlag = 1
         Abort    ; aborting this function skips the directory page
     ${EndIf}
@@ -166,7 +192,7 @@ Section "install"
 	${EndIf}
 	
 	${If} $InstallToMarketplaceFlag == 1
-	${AndIfNot} $MarketplaceScanDirectoryPathValue == ""
+	${AndIfNot} $MarketplaceHasScanDirectory == 0
 		; 2) Are we already running from *inside* that directory?
 		StrLen $R0 $MarketplaceScanDirectoryPathValue          ; get length of marketplace path
 		StrCpy $R1 $EXEDIR $R0                   ; grab that many chars from $EXEDIR

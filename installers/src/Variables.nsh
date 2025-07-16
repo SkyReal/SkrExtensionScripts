@@ -55,6 +55,7 @@ Var /GLOBAL XRCenterServiceRegKeyKey
 Var /GLOBAL XRCenterScanPathArgument
 Var /GLOBAL MarketplaceScanDirectoryPathSearchedValue
 Var /GLOBAL MarketplaceScanDirectoryPathValue
+Var /GLOBAL MarketplaceHasScanDirectory
 Var /GLOBAL MarketplaceScanningFile
 
 
@@ -107,6 +108,7 @@ Var /GLOBAL MarketplaceScanningFile
 	StrCpy $MarketplaceScanDirectoryPathSearchedValue "ScanDirectoryPath: ["
 	StrCpy $MarketplaceScanDirectoryPathValue ""
 	StrCpy $MarketplaceScanningFile ".ToScan"
+	StrCpy $MarketplaceHasScanDirectory 0
 
 !macroend
 
