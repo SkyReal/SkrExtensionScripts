@@ -1,3 +1,9 @@
+[CmdletBinding()]
+param(
+	[String]$CustomRessourcePluginsPath=""
+)
+
+
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 
 foreach ($hook in $Variables.Hooks) {
@@ -14,6 +20,13 @@ foreach ($hook in $Variables.Hooks) {
 $InputUnrealProjectFilePath = $Variables.InputUnrealProject
 $InputUnrealProjectDirectoryPath = (Get-Item $InputUnrealProjectFilePath).Directory
 $RessourcesPluginsPath = $Variables.PluginDownloadDir
+
+# You can use a custom RessourcePluginsPath folder as parameter
+if($CustomRessourcePluginsPath -ne "" && Test-Path -Path $CustomRessourcePluginsPath)
+{
+	$RessourcesPluginsPath = Resolve-Path -Path "$CustomRessourcePluginsPath"
+}
+
 $SkyRealPluginsToIgnore = $Variables.SkyRealPluginsToIgnore
 
 $SymLinks = @{
