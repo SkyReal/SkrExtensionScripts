@@ -2,11 +2,11 @@
 param(
 	[String]$PluginName,
     [String]$PluginPath,
-	[String]$FullVersion,
+	[String]$FullVersion="",
 	[String[]]$DependencyWhiteList=@(),
 	[bool]$ForceUpdate=$false,
 	[bool]$EditorManifest=$false,
-	[switch]$IsPlugin=$false
+	[switch]$DefaultNeverVisible=$false
 )
 
 # Manifest extension
@@ -15,9 +15,6 @@ $ManifestExtension = '.skrmanifest'
 # Vérification des paramètres obligatoires
 if (-not $PluginName) {
     throw "Parameter 'PluginName' required"
-}
-if (-not $FullVersion) {
-    throw "Parameter 'FullVersion' required"
 }
 if (-not $PluginPath) {
     throw "Parameter 'PluginPath' required"
@@ -92,8 +89,16 @@ else
 	$UPluginJson = Get-Content $UPluginFile -Raw | ConvertFrom-Json
 }
 
-$FullVersionString = Get-VersionString -FullVersionString
-$ShortVersionString = Get-VersionString
+if((-not $FullVersion) -or ($FullVersion -eq ""))
+{
+	$FullVersionString = "null"
+	$ShortVersionString = "null"
+}
+else
+{
+	$FullVersionString = Get-VersionString -FullVersionString
+	$ShortVersionString = Get-VersionString
+}
 
 # Initialize manifest: load existing if present, else new ordered hashtable
 $Manifest = [ordered]@{}
@@ -119,18 +124,11 @@ function Set-Field { param($Name, $Value, $forceUpdate)
 	if ($forceUpdate -or -not $Manifest.Contains($Name) -or -not $Manifest[$Name]) { $Manifest[$Name] = $Value }
 }
 
-$packageCategory = "Extension"
-if($IsPlugin)
-{
-	$packageCategory = "Plugin"
-}
-
 # Populate fields only if absent
 Set-Field Name          	$PluginName
 Set-Field DisplayName   	$UPluginJson.FriendlyName
 Set-Field Description   	$UPluginJson.Description
 Set-Field Version       	$FullVersionString $true
-Set-Field PackageCategory   $packageCategory
 
 # Handle PackageDependencies: convert to map of Name->Version
 if (-not $Manifest.Contains('PackageDependencies') -or -not $Manifest['PackageDependencies']) 
@@ -163,33 +161,30 @@ else
 	$Manifest['PackageDependencies'] = $existingPD
 }
 
+if ($Manifest.Contains('PackageCategory')) {
+	$Manifest.Remove('PackageCategory')
+}
+if ($Manifest.Contains('PackageMetadatas')) {
+	$Manifest.Remove('PackageMetadatas')
+}
+
 # Handle PackageMetadatas
 if (-not $Manifest.Contains('PackageMetadatas') -or -not $Manifest['PackageMetadatas']) {
-	if($IsPlugin)
+	if($DefaultNeverVisible)
 	{
 		$Manifest['PackageMetadatas'] = [ordered]@{
-			'OptionalPlugin' = 'false'
-			'LoadType' = 'Plugin'
+			'MarketplaceVisibility' = 'Never'
 		}
 	}
 	else
 	{
-		$Manifest['PackageMetadatas'] = [ordered]@{
-			'ShowInExtensionList' = 'true'
-			'IsEnabledByDefault' = 'false'
-		}
+		$Manifest['PackageMetadatas'] = [ordered]@{}
 	}
 } else {
 	$Meta = $Manifest['PackageMetadatas']
-	if($IsPlugin)
+	if($DefaultNeverVisible)
 	{
-		if (-not $Meta.Contains('OptionalPlugin')) { $Meta.Add('OptionalPlugin', 'false') }
-		if (-not $Meta.Contains('LoadType')) { $Meta.Add('LoadType', 'Plugin') }
-	}
-	else
-	{
-		if (-not $Meta.Contains('ShowInExtensionList')) { $Meta.Add('ShowInExtensionList', 'true') }
-		if (-not $Meta.Contains('IsEnabledByDefault')) { $Meta.Add('IsEnabledByDefault', 'false') }
+		if (-not $Meta.Contains('MarketplaceVisibility')) { $Meta.Add('MarketplaceVisibility', 'Never') }
 	}
 }
 

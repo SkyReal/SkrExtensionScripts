@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [bool]$ForceUpdate=$false,
-	[bool]$EditorManifest=$false
+	[bool]$EditorManifest=$false,
+	[switch]$NullVersion=$false
 )
 
 $PSScriptPath = Resolve-Path (Join-Path $PSScriptRoot "Create-Update-SkrManifest.ps1")
@@ -12,10 +13,20 @@ $UProjectfile = $Variables.InputUnrealProject
 $UProjectPath = (Get-Item $UProjectfile).Directory
 $AllPluginNames = $Variables.ExtensionsPlugins
 $FullVersion = $Variables.FullVersion
+if($NullVersion)
+{
+	$FullVersion = ""
+}
+$ProjectPluginsFolder = Join-Path $UProjectPath 'Plugins'
 
+# Get All potential dependencies
+
+$SkrPlugins = @(Get-ChildItem -Path "$ProjectPluginsFolder\*" -Recurse -Filter *.uplugin | Select-Object -ExpandProperty DirectoryName -Unique)
+$AllDependenciesPluginNames = $SkrPlugins | ForEach-Object { Split-Path $_ -Leaf }
+$AllDependenciesPluginNames += $AllPluginNames
 
 # Main loop
 foreach ($PluginName in $AllPluginNames) {
-    $PluginPath     = Join-Path $UProjectPath (Join-Path 'Plugins' $PluginName)
-	& $PSScriptPath -PluginName $PluginName -PluginPath $PluginPath -FullVersion $FullVersion -DependencyWhiteList $AllPluginNames -ForceUpdate $ForceUpdate -EditorManifest $EditorManifest
+    $PluginPath     = Join-Path $ProjectPluginsFolder $PluginName
+	& $PSScriptPath -PluginName $PluginName -PluginPath $PluginPath -FullVersion $FullVersion -DependencyWhiteList $AllDependenciesPluginNames -ForceUpdate $ForceUpdate -EditorManifest $EditorManifest
 }
