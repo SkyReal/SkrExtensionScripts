@@ -161,13 +161,6 @@ else
 	$Manifest['PackageDependencies'] = $existingPD
 }
 
-if ($Manifest.Contains('PackageCategory')) {
-	$Manifest.Remove('PackageCategory')
-}
-if ($Manifest.Contains('PackageMetadatas')) {
-	$Manifest.Remove('PackageMetadatas')
-}
-
 # Handle PackageMetadatas
 if (-not $Manifest.Contains('PackageMetadatas') -or -not $Manifest['PackageMetadatas']) {
 	if($DefaultNeverVisible)
