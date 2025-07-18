@@ -3,7 +3,8 @@ param(
 	[String]$PluginName,
     [String]$PluginPath,
 	[String]$FullVersion="",
-	[String[]]$DependencyWhiteList=@(),
+	[String[]]$DependenciesWhiteList=@(),
+	[String[]]$EditorDependenciesWhiteList=@(),
 	[bool]$ForceUpdate=$false,
 	[bool]$EditorManifest=$false,
 	[switch]$DefaultNeverVisible=$false
@@ -135,7 +136,7 @@ if (-not $Manifest.Contains('PackageDependencies') -or -not $Manifest['PackageDe
 {
 	$depsMap = [ordered]@{}
 	foreach ($Dep in $UPluginJson.Plugins) {
-		if ($DependencyWhiteList -contains $Dep.Name) {
+		if ($DependenciesWhiteList -contains $Dep.Name -or ($EditorManifest -and $EditorDependenciesWhiteList -contains $Dep.Name)) {
 			$depsMap[$Dep.Name] = $ShortVersionString
 		}
 	}
@@ -148,13 +149,24 @@ else
 	
 	# Update existing entries
 	foreach ($name in @($existingPD.Keys)) {
-		if ($DependencyWhiteList -contains $name) {
+		if ($DependenciesWhiteList -contains $name) {
 			$existingPD[$name] = $ShortVersionString
 		}
+		elseif ($EditorDependenciesWhiteList -contains $name)
+		{
+			if($EditorManifest)
+			{
+				$existingPD[$name] = $ShortVersionString
+			}
+			else
+			{
+				$existingPD.Remove($name)
+			}
+		}			
 	}
 	# Add any new dependencies from .uplugin
 	foreach ($Dep in $UPluginJson.Plugins) {
-		if ($DependencyWhiteList -contains $Dep.Name -and -not $existingPD.Contains($Dep.Name)) {
+		if (-not $existingPD.Contains($Dep.Name) -and ($DependencyWhiteList -contains $Dep.Name -or ($EditorManifest -and $EditorDependenciesWhiteList -contains $Dep.Name))) {
 			$existingPD[$Dep.Name] = $ShortVersionString
 		}
 	}

@@ -22,11 +22,10 @@ $ProjectPluginsFolder = Join-Path $UProjectPath 'Plugins'
 # Get All potential dependencies
 
 $SkrPlugins = @(Get-ChildItem -Path "$ProjectPluginsFolder\*" -Recurse -Filter *.uplugin | Select-Object -ExpandProperty DirectoryName -Unique)
-$AllDependenciesPluginNames = $SkrPlugins | ForEach-Object { Split-Path $_ -Leaf }
-$AllDependenciesPluginNames += $AllPluginNames
+$EditorDependenciesWhiteList = $SkrPlugins | ForEach-Object { Split-Path $_ -Leaf }
 
 # Main loop
 foreach ($PluginName in $AllPluginNames) {
     $PluginPath     = Join-Path $ProjectPluginsFolder $PluginName
-	& $PSScriptPath -PluginName $PluginName -PluginPath $PluginPath -FullVersion $FullVersion -DependencyWhiteList $AllDependenciesPluginNames -ForceUpdate $ForceUpdate -EditorManifest $EditorManifest
+	& $PSScriptPath -PluginName $PluginName -PluginPath $PluginPath -FullVersion $FullVersion -DependenciesWhiteList $AllPluginNames -EditorDependenciesWhiteList $EditorDependenciesWhiteList -ForceUpdate $ForceUpdate -EditorManifest $EditorManifest
 }
