@@ -22,9 +22,12 @@ $InputUnrealProjectDirectoryPath = (Get-Item $InputUnrealProjectFilePath).Direct
 $RessourcesPluginsPath = $Variables.PluginDownloadDir
 
 # You can use a custom RessourcePluginsPath folder as parameter
-if($CustomRessourcePluginsPath -ne "" && Test-Path -Path $CustomRessourcePluginsPath)
+if($CustomRessourcePluginsPath -ne "")
 {
-	$RessourcesPluginsPath = Resolve-Path -Path "$CustomRessourcePluginsPath"
+	if(Test-Path -Path $CustomRessourcePluginsPath)
+	{
+		$RessourcesPluginsPath = Resolve-Path -Path "$CustomRessourcePluginsPath"
+	}
 }
 
 $SkyRealPluginsToIgnore = $Variables.SkyRealPluginsToIgnore

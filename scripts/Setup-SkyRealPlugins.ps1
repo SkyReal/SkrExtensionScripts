@@ -64,7 +64,7 @@ If (Test-Path -Path $SourcePluginsPathFile)
 		} 
 		else
 		{
-			Write-Error "File " $FileSubPath " is not a zip"
+			Write-Host "File " $FileSubPath " is not a zip"
 		}
 	}
 }
