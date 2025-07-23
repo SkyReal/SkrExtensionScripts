@@ -48,6 +48,24 @@ Get-ChildItem -Path $RessourcesPluginsPath -Recurse -Filter "*.uplugin" | ForEac
     }
 }
 
+$RootPath = $InputUnrealProjectDirectoryPath
+
+if (-not (Test-Path $RootPath)) {
+        Write-Warning "Path does not exist: $RootPath"
+        return
+    }
+
+    Get-ChildItem -Path $RootPath -Recurse -Force | ForEach-Object {
+        if ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            try {
+                Remove-Item $_.FullName -Force
+                Write-Host "Removed symlink: $($_.FullName)"
+            } catch {
+                Write-Warning "Failed to remove symlink: $($_.FullName)"
+            }
+        }
+    }
+
 foreach ($symlinkRelativePath in $SymLinks.Keys) 
 {
 	$SymlinkFrom = $SymLinks[$symlinkRelativePath]
