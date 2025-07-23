@@ -32,8 +32,10 @@ if($CustomRessourcePluginsPath -ne "")
 
 $SkyRealPluginsToIgnore = $Variables.SkyRealPluginsToIgnore
 
-$SymLinks = @{
-	[IO.Path]::Combine($InputUnrealProjectDirectoryPath, "Content", "MetaHumans") = [IO.Path]::Combine($RessourcesPluginsPath, "Content", "MetaHumans");
+$SymLinks = @{}
+if (-not ($SkyRealPluginsToIgnore -contains "Content"))
+{
+	$SymLinks[[IO.Path]::Combine($InputUnrealProjectDirectoryPath, "Content", "MetaHumans")] = [IO.Path]::Combine($RessourcesPluginsPath, "Content", "MetaHumans");
 }
 
 Get-ChildItem -Path $RessourcesPluginsPath -Recurse -Filter "*.uplugin" | ForEach-Object {
