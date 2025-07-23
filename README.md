@@ -19,6 +19,7 @@ To make it work, create a `Variables.json` in your root folder of your main repo
 * **SkyRealPluginPatch**: The release patch of SkyRealVR used to download plugins (Should be `X.Y.Z` where X is major version, Y is minor version and Z the patch number or `latest` for latest version or `RCXX` for specific release candidate)
 * **SkyRealPluginsToIgnore**: The list of SkyRealVR plugin names to ignore. This can be used to improve performances.
 * **UnrealEditorEnvironmentVariable**: The environement variable used to specify the path of Unreal editor used for compilation.
+* **OutputEditor**: When building repository, also output editor version of your extensions for use in the marketplace.
 * **Hooks**: The hooks variable is used to specify additional scripts during all the setup/build prosses. To make it work, add as much items as you have hooks with following info:
   * **path**: The path (relative to repo root directory) of the hook powershell script.
   * **trigger**: The trigger raising the hook. Available values:
@@ -37,11 +38,12 @@ For local work, a file `Variables_local.json` can be created (git ignore) in the
 # Content details
 * `scripts\Get-Variables.ps1`: This script is used to retrieve all variables from the `Variables.json` file and edit relative path to full path.
 * `scripts\Setup-Repository.ps1`: This script will setup all repository by calling all setup scripts
-* `scripts\Setup-SkyRealPlugins.ps1`: This script will download latest SkyRealVR plugins from URL contained into `Variables.json`. There is an automatic fallback to URL if local directory not found.
+* `scripts\Setup-SkyRealPlugins.ps1`: This script will download latest SkyRealVR plugins from URL contained into `Variables.json`. There is an automatic fallback to URL if local directory not found. Use -CustomRessourcePluginsPath=[YourTargetPath] argument to use your own SkrPlugins source folder.
 * `scripts\Setup-SymLinks.ps1`: This script will create automatically symlink from downloaded plugins to playground project plugins directory.
 * `scripts\Build-Repository`: This script will build all repository by calling all build scripts
 * `scripts\Build-UEExtension.ps1`: This script will call Unreal editor to cook project and copy result into output directory.
 * `scripts\Build-Installer.ps1`: This script will call NSIS to create installer based on plugins cook data.
+* `scripts\CreateUpdateAllManifests.ps1`: This script will initialize manifests for use in the marketplace.
 * `installers\Common`: This directory is used for NSIS dependencies
 * `installers\src\*.nsh`: NSIS scripts files for installer
 * `installers\src\Assets\favicon.ico`: The icon of the installer
