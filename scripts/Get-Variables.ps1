@@ -67,16 +67,30 @@ foreach ($hook in $VariablesDocument.Hooks) {
     }
 }
 
-if (-not $VariablesDocument.PSObject.Properties['OutputEditor']) {
-    $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'OutputEditor' -Value $false
-} else {
-    $value = $VariablesDocument.OutputEditor.ToString().ToLower()
-    if ($value -eq "true" -or $value -eq "`$true") {
-        $VariablesDocument.OutputEditor = $true
+# Normalizes a boolean property in an object by forcing its value to $true or $false, or adds it with $false if missing.
+function Normalize-BoolVariable {
+    param (
+        [Parameter(Mandatory=$true)]
+        [psobject]$VariablesDocument,
+
+        [Parameter(Mandatory=$true)]
+        [string]$PropertyName
+    )
+
+    if (-not $VariablesDocument.PSObject.Properties[$PropertyName]) {
+        $VariablesDocument | Add-Member -MemberType NoteProperty -Name $PropertyName -Value $false
     } else {
-        $VariablesDocument.OutputEditor = $false
+        $value = $VariablesDocument.$PropertyName.ToString().ToLower()
+        if ($value -eq "true" -or $value -eq "`$true") {
+            $VariablesDocument.$PropertyName = $true
+        } else {
+            $VariablesDocument.$PropertyName = $false
+        }
     }
 }
+
+Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputEditor"
+
 if (-not $VariablesDocument.PSObject.Properties['FullVersion']) {
     $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'FullVersion' -Value "0.0.0.0"
 }
