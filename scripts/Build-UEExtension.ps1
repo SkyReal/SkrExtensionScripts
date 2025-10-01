@@ -133,6 +133,7 @@ Clean-Dir -DirToClean ([System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked
 
 # Cook content
 # Run Cook commandlet
+$unrealPAK=[System.IO.Path]::Combine($UEPath,"Engine","Binaries","Win64","UnrealPak.exe")
 $unrealEditorExe=[System.IO.Path]::Combine($UEPath,"Engine","Binaries","Win64","UnrealEditor-Cmd.exe")
 $unrealEditorUAT=[System.IO.Path]::Combine($UEPath,"Engine","Build","BatchFiles","RunUAT.bat")
 [String]$cookCommandLine = "  BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -cook -project=""$UProjectfile"" -unrealexe=""$unrealEditorExe"" -platform=Win64 -installed -skipstage"
@@ -158,9 +159,9 @@ foreach($Plugin in $Plugins)
 	}
 }
 
-
 # Move result into output directory
 $plugin_paths = @()
+$pak_objects = @()
 $outputCookDirContent = (Join-Path $outputCookDir "*")
 Write-Host "Move $outputCookDirContent to $OutputDir"  -ForegroundColor Green
 New-Item -ItemType Directory -Force -Path $OutputDir | out-null
@@ -170,7 +171,31 @@ foreach($Plugin in $Plugins)
 	$outputCookDirTmp = [System.IO.Path]::Combine($outputCookDir, $Plugin, "Content")
 	$OutputPluginDir = Join-Path $OutputDir $Plugin
 	New-Item -ItemType Directory -Force -Path $OutputPluginDir | out-null
-	Move-Item -path $outputCookDirTmp -destination $OutputPluginDir 
+	
+	
+	
+	# Generate Pak if necessary
+	if($Variables.OutputAsPakFile)
+	{
+	    $outputPakPath = (Join-Path $OutputPluginDir "Content.pak")
+		[String]$pakCommandLine = "$outputPakPath -create=""$outputCookDirTmp"" -compress "
+		$PAKResult = (Execute-SkrProcess -ProgramToRun "$unrealPAK" -ProgramArgs "$pakCommandLine")
+		if ($PAKResult -ne 0) {
+			Write-Error "Error while trying to PAK $outputCookDirTmp. Code=$PAKResult"
+			return 14
+		}
+		
+		$pak_objects += [pscustomobject]@{
+			  from              = $outputPakPath 
+			  to                = "plugins/$Plugin/Content"
+			  mount             = "/$Plugin/"
+			}
+	}
+	else 
+	{
+		Move-Item -path $outputCookDirTmp -destination $OutputPluginDir 
+	}
+	
 	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "*.uplugin") -destination $OutputPluginDir 
 	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "Resources") -destination $OutputPluginDir  -Recurse
 	
@@ -186,6 +211,9 @@ foreach($Plugin in $Plugins)
 	$jsonContent | Add-Member -MemberType NoteProperty -Name "ExplicitlyLoaded" -Value $true -Force
 	$jsonContent | ConvertTo-Json -Depth 10 | Set-Content -Path $pluginOutputPath
 	
+	
+	
+	
 	# Register plugin local path
 	$pluginOutputRelativePath = (Join-Path $Plugin $Plugin) + ".uplugin"
 	$plugin_paths += $pluginOutputRelativePath
@@ -195,6 +223,7 @@ foreach($Plugin in $Plugins)
 $json_data = @{
     "api" = 1
     "plugins" = $plugin_paths
+	"pak" = $pak_objects
 }
 $json_filePath = (Join-Path $OutputDir "SkrExtensions.json")
 $json_string = ConvertTo-Json -InputObject $json_data

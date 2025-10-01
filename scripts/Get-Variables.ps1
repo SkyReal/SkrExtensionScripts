@@ -90,6 +90,7 @@ function Normalize-BoolVariable {
 }
 
 Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputEditor"
+Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputAsPakFile"
 
 if (-not $VariablesDocument.PSObject.Properties['FullVersion']) {
     $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'FullVersion' -Value "0.0.0.0"
