@@ -33,6 +33,8 @@ $UProjectPath = (Get-Item $UProjectfile).Directory
 
 #Output directory path
 $OutputDir = $Variables.OutputBuildDir
+$OutputCookDir = $Variables.OutputBuildDirCook
+$OutputEditorDir = $Variables.OutputBuildDirEditor
 
 function Clean-Dir
 {
@@ -100,138 +102,206 @@ function Execute-SkrProcess([String]$ProgramToRun, [String]$ProgramArgs)
     return $result
 }
 
-# Add Plugin to always cook directories
-$PluginDefaultGameIniPath = Join-Path (Join-Path $UProjectPath "Config") "DefaultGame.ini"
-if(Test-Path -Path $PluginDefaultGameIniPath)
-{
-	foreach($Plugin in $Plugins)
-	{
-		$AlwaysCookPluginLine = (Get-Content -Path $PluginDefaultGameIniPath | Where-Object {$_ -like "*DirectoriesToAlwaysCook=(Path=`"/$Plugin`")"})
-		if ($AlwaysCookPluginLine.Count -lt 1)
-		{
-			Write-Host "Adding $Plugin to Directories to always cook"
-			Add-Content -Path $PluginDefaultGameIniPath -Value "+DirectoriesToAlwaysCook=(Path=`"/$Plugin`")"
-		}
-		else
-		{
-			Write-Host "$Plugin already registered in directories to always cook" -ForegroundColor Green
-		}
-	}
-	
-}
-else
-{
-	Write-Error "No DefaultGame.ini found" 
-	return 14
-}
 
 # Clean Output Directory
 Clean-Dir -DirToClean $OutputDir
-
-# Clean Cooked Directory
-Clean-Dir -DirToClean ([System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked"))
-
-# Cook content
-# Run Cook commandlet
+New-Item -ItemType Directory -Force -Path $OutputDir | out-null
+	
 $unrealPAK=[System.IO.Path]::Combine($UEPath,"Engine","Binaries","Win64","UnrealPak.exe")
+$unrealPAKCompressOptions="-compress -compressionformats=oodle -primarycompressionformat=oodle -compressionblocksize=1048576"
 $unrealEditorExe=[System.IO.Path]::Combine($UEPath,"Engine","Binaries","Win64","UnrealEditor-Cmd.exe")
 $unrealEditorUAT=[System.IO.Path]::Combine($UEPath,"Engine","Build","BatchFiles","RunUAT.bat")
-[String]$cookCommandLine = "  BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -cook -project=""$UProjectfile"" -unrealexe=""$unrealEditorExe"" -platform=Win64 -installed -skipstage"
-Write-Host "Cook project with cmd line: $unrealEditorUAT $cookCommandLine" -ForegroundColor Green
 
-$cookResult = (Execute-SkrProcess -ProgramToRun "$unrealEditorUAT" -ProgramArgs "$cookCommandLine")
-if ($cookResult -ne 0) {
-	Write-Error "Error while trying to cook. Code=$cookResult"
-	return 13
-}
-
-
-# Check success
-$outputCookDir = [System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked", "Windows", $ProjectName, "Plugins")
-foreach($Plugin in $Plugins)
+# Cook content
+if ($Variables.OutputCook)
 {
-	$outputCookDirTmp = [System.IO.Path]::Combine($outputCookDir, $Plugin)
-	Write-Host "Check if plugin has been successfully build by verifiying path $outputCookDir"  -ForegroundColor Green
-	if (!(Test-Path "$outputCookDir")) {
-		Write-Error "Failed to cook plugin"
-		Clean-Dir -DirToClean $OutputDir
-		return 1
-	}
-}
-
-# Move result into output directory
-$plugin_paths = @()
-$pak_objects = @()
-$outputCookDirContent = (Join-Path $outputCookDir "*")
-Write-Host "Move $outputCookDirContent to $OutputDir"  -ForegroundColor Green
-New-Item -ItemType Directory -Force -Path $OutputDir | out-null
-
-foreach($Plugin in $Plugins)
-{
-	$outputCookDirTmp = [System.IO.Path]::Combine($outputCookDir, $Plugin, "Content")
-	$OutputPluginDir = Join-Path $OutputDir $Plugin
-	New-Item -ItemType Directory -Force -Path $OutputPluginDir | out-null
-	
-	
-	
-	# Generate Pak if necessary
-	if($Variables.OutputAsPakFile)
+	# Add Plugin to always cook directories
+	$PluginDefaultGameIniPath = Join-Path (Join-Path $UProjectPath "Config") "DefaultGame.ini"
+	if(Test-Path -Path $PluginDefaultGameIniPath)
 	{
-	    $outputPakPath = (Join-Path $OutputPluginDir "Content.pak")
-		[String]$pakCommandLine = "$outputPakPath -create=""$outputCookDirTmp"" -compress "
-		$PAKResult = (Execute-SkrProcess -ProgramToRun "$unrealPAK" -ProgramArgs "$pakCommandLine")
-		if ($PAKResult -ne 0) {
-			Write-Error "Error while trying to PAK $outputCookDirTmp. Code=$PAKResult"
-			return 14
+		foreach($Plugin in $Plugins)
+		{
+			$AlwaysCookPluginLine = (Get-Content -Path $PluginDefaultGameIniPath | Where-Object {$_ -like "*DirectoriesToAlwaysCook=(Path=`"/$Plugin`")"})
+			if ($AlwaysCookPluginLine.Count -lt 1)
+			{
+				Write-Host "Adding $Plugin to Directories to always cook"
+				Add-Content -Path $PluginDefaultGameIniPath -Value "+DirectoriesToAlwaysCook=(Path=`"/$Plugin`")"
+			}
+			else
+			{
+				Write-Host "$Plugin already registered in directories to always cook" -ForegroundColor Green
+			}
+		}
+	}
+	else
+	{
+		Write-Error "No DefaultGame.ini found" 
+		return 14
+	}
+
+	# Clean Cooked Directory
+	Clean-Dir -DirToClean ([System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked"))
+
+	# Run Cook commandlet
+	[String]$cookCommandLine = "  BuildCookRun -nop4 -utf8output -nocompileeditor -skipbuildeditor -cook -project=""$UProjectfile"" -unrealexe=""$unrealEditorExe"" -platform=Win64 -installed -skipstage"
+	Write-Host "Cook project with cmd line: $unrealEditorUAT $cookCommandLine" -ForegroundColor Green
+	
+	$cookResult = (Execute-SkrProcess -ProgramToRun "$unrealEditorUAT" -ProgramArgs "$cookCommandLine")
+	if ($cookResult -ne 0) {
+		Write-Error "Error while trying to cook. Code=$cookResult"
+		return 13
+	}
+	
+	# Check success
+	$UECookPluginsOutput = [System.IO.Path]::Combine($UProjectPath, "Saved", "Cooked", "Windows", $ProjectName, "Plugins")
+	foreach($Plugin in $Plugins)
+	{
+		$UECookPluginOutput = [System.IO.Path]::Combine($UECookPluginsOutput, $Plugin)
+		Write-Host "Check if plugin has been successfully build by verifiying path $UECookPluginOutput"  -ForegroundColor Green
+		if (!(Test-Path "$UECookPluginOutput")) {
+			Write-Error "Failed to cook plugin"
+			Clean-Dir -DirToClean $OutputDir
+			return 1
+		}
+	}
+	
+	# Move cook result into output directory
+	$plugin_paths = @()
+	Write-Host "Move $UECookPluginsOutput to $OutputCookDir"  -ForegroundColor Green
+	New-Item -ItemType Directory -Force -Path $OutputCookDir | out-null
+	
+	foreach($Plugin in $Plugins)
+	{
+		$UECookPluginOutput = [System.IO.Path]::Combine($UECookPluginsOutput, $Plugin, "Content")
+		$OutputCookPluginDir = Join-Path $OutputCookDir $Plugin
+		New-Item -ItemType Directory -Force -Path $OutputCookPluginDir | out-null
+		
+		# Generate Pak of cook data if necessary
+		if($Variables.OutputCookAsPakFile)
+		{
+			$outputCookPakPath = (Join-Path $OutputCookPluginDir "Content.pak")
+			[String]$pakCommandLine = "$outputCookPakPath -create=""$UECookPluginOutput"" $unrealPAKCompressOptions"
+			$PAKResult = (Execute-SkrProcess -ProgramToRun "$unrealPAK" -ProgramArgs "$pakCommandLine")
+			if ($PAKResult -ne 0) {
+				Write-Error "Error while trying to PAK $UECookPluginOutput. Code=$PAKResult"
+				return 14
+			}
+		}
+		else 
+		{
+			Move-Item -path $UECookPluginOutput -destination $OutputCookPluginDir 
 		}
 		
-		$pak_objects += [pscustomobject]@{
-			  from              = $outputPakPath 
-			  to                = "plugins/$Plugin/Content"
-			  mount             = "/$Plugin/"
+		# Copy plugin files into cook output
+		Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "*.uplugin") -destination $OutputCookPluginDir 
+		Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "Resources") -destination $OutputCookPluginDir  -Recurse
+		$manifestPath = (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "$Plugin.skrmanifest")
+		if(Test-Path $manifestPath)
+		{
+			Copy-Item $manifestPath -destination $OutputCookPluginDir
+		}
+		
+		# Set ExplicitlyLoaded field to True for cook content
+		$pluginOutputPath = (Join-Path $OutputCookPluginDir $Plugin) + ".uplugin"
+		$jsonContent = Get-Content -Raw -Path $pluginOutputPath | ConvertFrom-Json
+		$jsonContent | Add-Member -MemberType NoteProperty -Name "ExplicitlyLoaded" -Value $true -Force
+		$jsonContent | ConvertTo-Json -Depth 10 | Set-Content -Path $pluginOutputPath
+		
+		# Register plugin local path
+		$pluginOutputRelativePath = (Join-Path $Plugin $Plugin) + ".uplugin"
+		$plugin_paths += $pluginOutputRelativePath
+	}
+	
+	# Create extension.json file for cook content
+	$json_data = @{
+		"api" = 1
+		"plugins" = $plugin_paths
+	}
+	$json_filePath = (Join-Path $OutputCookDir "SkrExtensions.json")
+	$json_string = ConvertTo-Json -InputObject $json_data
+	$json_string | Set-Content -Path $json_filePath
+	
+	# Create the .skrlnk file for cook content (use [System.IO.File] to avoid new line at the end of the file)
+	$skrlnk_fileName = $Variables.InstallerName + ".skrlnk"
+	[System.IO.File]::WriteAllText((Join-Path $OutputCookDir $skrlnk_fileName), $json_filePath)
+
+}
+
+
+# Move editor plugins to output directories
+if ($Variables.OutputEditor)
+{
+	New-Item -ItemType Directory -Force -Path $OutputEditorDir | out-null
+	
+	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -EditorManifest $true
+	
+	$plugin_paths = @()
+	foreach($Plugin in $Plugins)
+	{
+		# Register plugin local path
+		$pluginOutputRelativePath = (Join-Path $Plugin $Plugin) + ".uplugin"
+		$plugin_paths += $pluginOutputRelativePath
+		$currentEditorPuginPath = (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin)
+		$OutputEditorPluginDir = Join-Path $OutputEditorDir $Plugin
+		
+		if($Variables.OutputEditorAsPakFile)
+		{
+			# Generate Pak of editor data if necessary
+			$UEEditorPlugin = (Join-Path $currentEditorPuginPath "Content")
+			
+			$outputEditorPakPath = (Join-Path $OutputEditorPluginDir "Content.pak")
+			[String]$pakCommandLine = "$outputEditorPakPath -create=""$UEEditorPlugin"" $unrealPAKCompressOptions"
+			$PAKResult = (Execute-SkrProcess -ProgramToRun "$unrealPAK" -ProgramArgs "$pakCommandLine")
+			if ($PAKResult -ne 0) {
+				Write-Error "Error while trying to PAK $UEEditorPlugin. Code=$PAKResult"
+				return 15
 			}
+			# Copy plugin files into editor output
+			Copy-Item -path (Join-Path $currentEditorPuginPath "*.uplugin") -destination $OutputEditorPluginDir 
+			Copy-Item -path (Join-Path $currentEditorPuginPath "Resources") -destination $OutputEditorPluginDir  -Recurse
+			$manifestPath = (Join-Path $currentEditorPuginPath "$Plugin.skrmanifest")
+			if(Test-Path $manifestPath)
+			{
+				Copy-Item $manifestPath -destination $OutputEditorPluginDir
+			}
+			
+			# Set ExplicitlyLoaded field to True for editor
+			$pluginOutputPath = (Join-Path $OutputEditorPluginDir $Plugin) + ".uplugin"
+			$jsonContent = Get-Content -Raw -Path $pluginOutputPath | ConvertFrom-Json
+			$jsonContent | Add-Member -MemberType NoteProperty -Name "ExplicitlyLoaded" -Value $true -Force
+			$jsonContent | ConvertTo-Json -Depth 10 | Set-Content -Path $pluginOutputPath
+		}
+		else
+		{
+			# Create symlink to the editor plugin
+			$SymlinkFrom = $currentEditorPuginPath
+			$SymlinkTo = $OutputEditorPluginDir
+			Write-Host "From = " + $SymlinkFrom + " / to = " $SymlinkTo
+			If (Test-Path -Path $SymlinkTo) {
+				# Delete legacy directory if exists to replace it by symlink
+				Remove-Item -Recurse -Force $SymlinkTo
+			}
+			New-Item -ItemType Directory -Force -Path $SymlinkFrom | Out-Null
+			New-Item -ItemType Directory -Force -Path (Split-Path $SymlinkTo) | Out-Null
+			New-Item -ItemType SymbolicLink -Path $SymlinkTo -Target $SymlinkFrom -Force
+		}
 	}
-	else 
-	{
-		Move-Item -path $outputCookDirTmp -destination $OutputPluginDir 
+	
+	# Create extension.json file for editor content
+	$json_data = @{
+		"api" = 1
+		"plugins" = $plugin_paths
 	}
+	$json_filePath = (Join-Path $OutputEditorDir "SkrExtensions.json")
+	$json_string = ConvertTo-Json -InputObject $json_data
+	$json_string | Set-Content -Path $json_filePath
 	
-	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "*.uplugin") -destination $OutputPluginDir 
-	Copy-Item -path (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "Resources") -destination $OutputPluginDir  -Recurse
-	
-	$manifestPath = (Join-Path (Join-Path (Join-Path $UProjectPath "Plugins") $Plugin) "$Plugin.skrmanifest")
-	if(Test-Path $manifestPath)
-	{
-		Copy-Item $manifestPath -destination $OutputPluginDir
-	}
-	
-	# Set ExplicitlyLoaded field to True
-	$pluginOutputPath = (Join-Path $OutputPluginDir $Plugin) + ".uplugin"
-	$jsonContent = Get-Content -Raw -Path $pluginOutputPath | ConvertFrom-Json
-	$jsonContent | Add-Member -MemberType NoteProperty -Name "ExplicitlyLoaded" -Value $true -Force
-	$jsonContent | ConvertTo-Json -Depth 10 | Set-Content -Path $pluginOutputPath
-	
-	
-	
-	
-	# Register plugin local path
-	$pluginOutputRelativePath = (Join-Path $Plugin $Plugin) + ".uplugin"
-	$plugin_paths += $pluginOutputRelativePath
+	# Create the .skrlnk file for editor content (use [System.IO.File] to avoid new line at the end of the file)
+	$skrlnk_fileName = $Variables.InstallerName + ".skrlnk"
+	[System.IO.File]::WriteAllText((Join-Path $OutputEditorDir $skrlnk_fileName), $json_filePath)
+		
+	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -NullVersion
 }
-
-# Create extension.json file
-$json_data = @{
-    "api" = 1
-    "plugins" = $plugin_paths
-	"pak" = $pak_objects
-}
-$json_filePath = (Join-Path $OutputDir "SkrExtensions.json")
-$json_string = ConvertTo-Json -InputObject $json_data
-$json_string | Set-Content -Path $json_filePath
-
-# Create the .skrlnk file
-$skrlnk_fileName = $Variables.InstallerName + ".skrlnk"
-$json_filePath | Set-Content -Path (Join-Path $OutputDir $skrlnk_fileName)
 
 
 foreach ($hook in $Variables.Hooks) {

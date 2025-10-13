@@ -19,7 +19,10 @@ To make it work, create a `Variables.json` in your root folder of your main repo
 * **SkyRealPluginPatch**: The release patch of SkyRealVR used to download plugins (Should be `X.Y.Z` where X is major version, Y is minor version and Z the patch number or `latest` for latest version or `RCXX` for specific release candidate)
 * **SkyRealPluginsToIgnore**: The list of SkyRealVR plugin names to ignore. This can be used to improve performances.
 * **UnrealEditorEnvironmentVariable**: The environement variable used to specify the path of Unreal editor used for compilation.
-* **OutputEditor**: When building repository, also output editor version of your extensions for use in the marketplace.
+* **OutputCook**: When building repository, output cook version of your extensions for use in the marketplace. (True if missing)
+* **OutputEditor**: When building repository, output editor version of your extensions for use in the marketplace. (False if missing)
+* **OutputCookAsPakFile**: When building cook output, PAK it to compress it. (False if missing)
+* **OutputEditorAsPakFile**: When building editor output, PAK it to compress it (once the content is PAK, it can no more be editable within Unreal editor). (False if missing)
 * **Hooks**: The hooks variable is used to specify additional scripts during all the setup/build prosses. To make it work, add as much items as you have hooks with following info:
   * **path**: The path (relative to repo root directory) of the hook powershell script.
   * **trigger**: The trigger raising the hook. Available values:
@@ -43,7 +46,10 @@ For local work, a file `Variables_local.json` can be created (git ignore) in the
 * `scripts\Build-Repository`: This script will build all repository by calling all build scripts
 * `scripts\Build-UEExtension.ps1`: This script will call Unreal editor to cook project and copy result into output directory.
 * `scripts\Build-Installer.ps1`: This script will call NSIS to create installer based on plugins cook data.
-* `scripts\CreateUpdateAllManifests.ps1`: This script will initialize manifests for use in the marketplace.
+* `scripts\CreateUpdateAllManifests.ps1`: This script will initialize manifests for use in the marketplace. Working with the following params:
+  * `ForceUpdate`: Force the update of the manifest file, even if already exists
+  * `EditorManifest`: Migrate manifest to editor TargetPlatform (Unreal)
+  * `NullVersion`: switch used to force the version of the manifest to be empty (version of `Variables.json` used otherwise)
 * `installers\Common`: This directory is used for NSIS dependencies
 * `installers\src\*.nsh`: NSIS scripts files for installer
 * `installers\src\Assets\favicon.ico`: The icon of the installer

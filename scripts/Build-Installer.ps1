@@ -15,19 +15,20 @@ $SkyRealVersion = $Variables.SkyRealVersion
 $ProductUpgradeCode = $Variables.ProductUpgradeCode
 $InstallerName = $Variables.InstallerName
 $OutputBuildDir = $Variables.OutputBuildDir
+$OutputCookDir = $Variables.OutputBuildDirCook
+$OutputEditorDir = $Variables.OutputBuildDirEditor
 $OutputInstallDir = $Variables.OutputInstallDir
 $CompanyName = $Variables.CompanyName
 $AdditionalInstallersScripts = $Variables.AdditionalInstallersScripts
 
 $Plugins = $Variables.ExtensionsPlugins
-$OutputEditor = $Variables.OutputEditor
 $UProjectfile = $Variables.InputUnrealProject
 $UProjectPath = (Get-Item $UProjectfile).Directory
 
 $RepositoryPath = Resolve-Path (Join-Path $PSScriptRoot "..")
 $ExtensionInstallerSourcePath = (Join-Path (Join-Path $RepositoryPath "installers") "src")
 $SkrAppBaseFileName = $InstallerName + " " + $Version
-$SkrAppZipFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".zip"))
+$SkrTmpZipFilePath = (Join-Path $OutputInstallDir "tmp.zip")
 $SkrAppFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".skrapp"))
 $EditorZipFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + "_Editor.zip"))
 
@@ -38,35 +39,41 @@ If (Test-Path -Path $OutputInstallDir)
 }
 New-Item -Path $OutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
 
-Write-Host "Create skrapp file"
-$filesToCompress = Get-ChildItem -Path $OutputBuildDir -Exclude *.skrlnk
-Compress-Archive -Path $filesToCompress.FullName -DestinationPath $SkrAppZipFilePath -Force
-Move-Item -Path $SkrAppZipFilePath -Destination $SkrAppFilePath
-
-if($OutputEditor)
+# Zip cook dir
+If ($Variables.OutputCook)
 {
-	# Update editor manifest
+	Write-Host "Create cook skrapp file"
+	$filesToCompress = Get-ChildItem -Path $OutputCookDir -Exclude *.skrlnk
+	Compress-Archive -Path $filesToCompress.FullName -DestinationPath $SkrTmpZipFilePath -Force
+	Move-Item -Path $SkrTmpZipFilePath -Destination $SkrAppFilePath
+	
+	Write-Host "Done creating cook skrapp file"
+}
+
+# Zip editor dir
+if($Variables.OutputEditor)
+{
+	Write-Host "Create editor zip file"
 	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -EditorManifest $true
 	
-	Push-Location (Join-Path $UProjectPath "Plugins")
-
-	foreach ($Plugin in $Plugins)
-	{
-		$relativePluginPath = "./$Plugin"
-		Compress-Archive -Path $relativePluginPath -DestinationPath $EditorZipFilePath -Update
-	}
+	$filesToCompress = Get-ChildItem -Path $OutputEditorDir -Exclude *.skrlnk
+	Compress-Archive -Path $filesToCompress.FullName -DestinationPath $SkrTmpZipFilePath -Force
+	Move-Item -Path $SkrTmpZipFilePath -Destination $EditorZipFilePath
 	
-	Pop-Location
+	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -NullVersion
+	Write-Host "Done creating editor zip file"
 }
 
 
+# Compute installer size
 Add-Type -assembly "system.io.compression.filesystem"
 $Archive = [io.compression.zipfile]::OpenRead($SkrAppFilePath)
 $ArchiveSize = $Archive.Entries.Length | Measure-Object -Sum
 $ArchiveSize = $ArchiveSize.Sum / 1000
 $Archive.Dispose()
-Write-Host "Total archve size will be " $ArchiveSize
+Write-Host "Total archive size will be " $ArchiveSize
 
+# Get NSIS path to create installer
 if ($env:NSIS)
 {
 	$NSISCompilerPath = (Join-Path $env:NSIS "makensis.exe")
@@ -81,9 +88,7 @@ If (-not (Test-Path -Path $NSISCompilerPath))
 	return
 }
 
-
-
-
+# Call NSIS to create installer
 Write-Host "Building installer using NSIS Compiler: $NSISCompilerPath"
 $location = Get-Location
 Set-Location $ExtensionInstallerSourcePath

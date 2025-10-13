@@ -57,6 +57,8 @@ $VariablesDocument.OutputBuildDir = Join-Path $jsonVariableFileDirectory $Variab
 $VariablesDocument.OutputInstallDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.OutputInstallDir 
 $VariablesDocument.InputUnrealProject = Join-Path $jsonVariableFileDirectory $VariablesDocument.InputUnrealProject 
 $VariablesDocument.PluginDownloadDir = Join-Path $jsonVariableFileDirectory $VariablesDocument.PluginDownloadDir 
+$VariablesDocument | Add-Member -MemberType NoteProperty -Name 'OutputBuildDirCook' -Value (Join-Path $VariablesDocument.OutputBuildDir "Cook")
+$VariablesDocument | Add-Member -MemberType NoteProperty -Name 'OutputBuildDirEditor' -Value (Join-Path $VariablesDocument.OutputBuildDir "Editor")
 if (-not $VariablesDocument.PSObject.Properties['Hooks']) {
     $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'Hooks' -Value @()
 }
@@ -74,11 +76,14 @@ function Normalize-BoolVariable {
         [psobject]$VariablesDocument,
 
         [Parameter(Mandatory=$true)]
-        [string]$PropertyName
+        [string]$PropertyName,
+
+        [Parameter(Mandatory=$false)]
+        [boolean]$DefaultValue = $false
     )
 
     if (-not $VariablesDocument.PSObject.Properties[$PropertyName]) {
-        $VariablesDocument | Add-Member -MemberType NoteProperty -Name $PropertyName -Value $false
+        $VariablesDocument | Add-Member -MemberType NoteProperty -Name $PropertyName -Value $DefaultValue
     } else {
         $value = $VariablesDocument.$PropertyName.ToString().ToLower()
         if ($value -eq "true" -or $value -eq "`$true") {
@@ -89,8 +94,10 @@ function Normalize-BoolVariable {
     }
 }
 
-Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputEditor"
-Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputAsPakFile"
+Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputCook" -DefaultValue $true
+Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputCookAsPakFile"
+Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputEditor" 
+Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputEditorAsPakFile"
 
 if (-not $VariablesDocument.PSObject.Properties['FullVersion']) {
     $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'FullVersion' -Value "0.0.0.0"
