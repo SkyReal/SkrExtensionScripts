@@ -11,7 +11,7 @@ $PSScriptPath = Resolve-Path (Join-Path $PSScriptRoot "Create-Update-SkrManifest
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 $UProjectfile = $Variables.InputUnrealProject
 $UProjectPath = (Get-Item $UProjectfile).Directory
-$AllPluginNames = $Variables.ExtensionsPlugins
+$AllPluginNames = $Variables.AllExtensionsPlugins
 $FullVersion = $Variables.FullVersion
 if($NullVersion)
 {

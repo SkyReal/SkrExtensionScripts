@@ -17,25 +17,17 @@ foreach ($hook in $Variables.Hooks) {
 
 $Version = $Variables.FullVersion
 $SkyRealVersion = $Variables.SkyRealVersion
-$ProductUpgradeCode = $Variables.ProductUpgradeCode
-$InstallerName = $Variables.InstallerName
 $OutputBuildDir = $Variables.OutputBuildDir
 $OutputCookDir = $Variables.OutputBuildDirCook
 $OutputEditorDir = $Variables.OutputBuildDirEditor
 $OutputInstallDir = $Variables.OutputInstallDir
 $CompanyName = $Variables.CompanyName
-$AdditionalInstallersScripts = $Variables.AdditionalInstallersScripts
 
-$Plugins = $Variables.ExtensionsPlugins
 $UProjectfile = $Variables.InputUnrealProject
 $UProjectPath = (Get-Item $UProjectfile).Directory
 
 $RepositoryPath = Resolve-Path (Join-Path $PSScriptRoot "..")
 $ExtensionInstallerSourcePath = (Join-Path (Join-Path $RepositoryPath "installers") "src")
-$SkrAppBaseFileName = $InstallerName + " " + $Version
-$SkrTmpZipFilePath = (Join-Path $OutputInstallDir "tmp.zip")
-$SkrAppFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".skrapp"))
-$EditorZipFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + "_Editor.zip"))
 
 $barLength = 40
 $consoleWidth = $Host.UI.RawUI.WindowSize.Width
@@ -47,70 +39,112 @@ If (Test-Path -Path $OutputInstallDir)
 }
 New-Item -Path $OutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
 
+function Create-Zip {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$ZipPath
+    )
+	$zipStream = [System.IO.File]::Open($ZipPath, [System.IO.FileMode]::Create)
+	$archive = [System.IO.Compression.ZipArchive]::new($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
+	
+	return @{
+        ZipStream = $zipStream
+        Archive   = $archive
+    }
+}
 
+function Close-Zip {
+    param(
+        [Parameter(Mandatory=$true)]
+        [System.IO.Compression.ZipArchive]$Archive,
+        [Parameter(Mandatory=$true)]
+        [System.IO.FileStream]$ZipStream
+    )
+	if ($Archive) { 
+		try { $Archive.Dispose() } catch {}
+	}
+	if ($ZipStream) { 
+		try { $ZipStream.Dispose() } catch {}
+	}
+	[System.GC]::Collect()
+	[System.GC]::WaitForPendingFinalizers()
+}
+
+function Compress-FileToZip {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$SourceFolder,
+		
+        [Parameter(Mandatory=$true)]
+        [System.IO.FileInfo]$SourceFile,
+
+        [Parameter(Mandatory=$true)]
+        [System.IO.Compression.ZipArchive]$Archive,
+
+        [Parameter(Mandatory=$false)]
+        [string]$InnerArchiveRootPath,
+
+        [Parameter(Mandatory=$true)]
+        [bool]$OutputCompressed
+    )
+	
+	try
+	{
+		$relativePath = $SourceFile.FullName.Substring($SourceFolder.Length + 1)
+		if ($InnerArchiveRootPath) {
+			$relativePath = Join-Path $InnerArchiveRootPath $relativePath
+		}
+		$compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
+		if (($SourceFile.Extension -ieq ".pak") -or (-not $OutputCompressed)) {
+			$compressionLevel = [System.IO.Compression.CompressionLevel]::NoCompression
+		}
+		$entry = $Archive.CreateEntry($relativePath, $compressionLevel)
+		$inputStream = [System.IO.File]::OpenRead($SourceFile.FullName)
+		$totalDecompressedSize += $inputStream.Length
+		$outputStream = $entry.Open()
+		$inputStream.CopyTo($outputStream)
+	} finally {
+		if ($outputStream) { 
+			try { $outputStream.Dispose() } catch {}
+		}
+		if ($inputStream) { 
+			try { $inputStream.Dispose() } catch {}
+		}
+	}
+}
 
 function Compress-FolderToZip {
     param(
         [Parameter(Mandatory=$true)]
         [string]$SourceFolder,
+		
+        [Parameter(Mandatory = $true)]
+        [string[]]$SubFoldersToInclude,
 
         [Parameter(Mandatory=$true)]
-        [string]$ZipPath,
+        [System.IO.Compression.ZipArchive]$Archive,
+
+        [Parameter(Mandatory=$false)]
+        [string]$InnerArchiveRootPath,
 
         [Parameter(Mandatory=$true)]
         [bool]$OutputCompressed
     )
-
-    Add-Type -AssemblyName 'System.IO.Compression'
-    Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
-
 	$totalDecompressedSize = 0
-    $zipStream = $null
-    $archive = $null
     $startTime = Get-Date
-    $stopRequested = $false
-
-    # Ctrl+C event
-    $cancelEvent = Register-EngineEvent PowerShell.Exiting -Action {
-		$global:stopRequested = $true
-		Write-Host "`n⛔ Compression process aborted. Cleaning up..."
-    }
-	
-	$startTime = Get-Date
 	$index = 0
 	
-	$zipStream = $null
-	$archive = $null
-	$outputStream = $null
-	$inputStream = $null
-	try
-	{
-		Write-Host "Archive directory $SourceFolder to $ZipPath"
+	Write-Host "Archive directory $SourceFolder"
+	
+	foreach ($subFolder in $SubFoldersToInclude) {
+		$subFolderFullPath = Join-Path $SourceFolder $subFolder
 		
-		$zipStream = [System.IO.File]::Open($ZipPath, [System.IO.FileMode]::Create)
-		$archive = [System.IO.Compression.ZipArchive]::new($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
-		
-		$files = Get-ChildItem -Path $SourceFolder -Exclude *.skrlnk -Recurse -File
+		$files = Get-ChildItem -Path $subFolderFullPath -Exclude *.skrlnk -Recurse -File
 	
 		foreach ($file in $files) {
-			if ($global:stopRequested) { break }
 			$index++
-			$relativePath = $file.FullName.Substring($SourceFolder.Length + 1)
-			$compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
-			if (($file.Extension -ieq ".pak") -or (-not $OutputCompressed)) {
-				$compressionLevel = [System.IO.Compression.CompressionLevel]::NoCompression
-			}
-			$entry = $archive.CreateEntry($relativePath, $compressionLevel)
-			$inputStream = [System.IO.File]::OpenRead($file.FullName)
-			$totalDecompressedSize += $inputStream.Length
-			$outputStream = $entry.Open()
-			$inputStream.CopyTo($outputStream)
-			$outputStream.Dispose()
-			$outputStream = $null
-			$inputStream.Dispose()
-			$inputStream = $null
 			
-
+			Compress-FileToZip -SourceFolder $SourceFolder -SourceFile $file -Archive $Archive -OutputCompressed $OutputCompressed -InnerArchiveRootPath $InnerArchiveRootPath
 			
 			$elapsed = (Get-Date) - $startTime
 			$percent = [math]::Round(($index / $files.Count) * 100, 1)
@@ -123,55 +157,12 @@ function Compress-FolderToZip {
 			Write-Host ("`r[{0}] {1}% ({2}/{3}) - {4}s - {5}" -f $bar, $percent, $index, $files.Count, [int]$elapsed.TotalSeconds, $file.Name) -NoNewline
 		}
 	}
-	finally 
-	{
-		Write-Host ""
-		Write-Host "Cleaning memory"
-		if ($outputStream) { 
-			try { $outputStream.Dispose() } catch {}
-		}
-		if ($inputStream) { 
-			try { $inputStream.Dispose() } catch {}
-		}
-		if ($archive) { 
-			try { $archive.Dispose() } catch {}
-		}
-		if ($zipStream) { 
-			try { $zipStream.Dispose() } catch {}
-		}
-		[System.GC]::Collect()
-		[System.GC]::WaitForPendingFinalizers()
-		Unregister-Event -SourceIdentifier PowerShell.Exiting -ErrorAction SilentlyContinue
-	}
-	Write-Host ("Done creating archive file in {0:N1} secondes" -f ((Get-Date) - $startTime).TotalSeconds)
+	
+	Write-Host ("Done archiving directory in {0:N1} secondes" -f ((Get-Date) - $startTime).TotalSeconds)
 	Write-Host "totalDecompressedSize is $totalDecompressedSize" 
 	return $totalDecompressedSize
 }
 
-
-
-$ArchiveSize = 0
-
-# Zip cook dir
-If ($Variables.OutputCook)
-{
-	Write-Host "Create cook skrapp file"
-	$ArchiveSize += Compress-FolderToZip -SourceFolder $OutputCookDir -ZipPath $SkrAppFilePath -OutputCompressed $Variables.OutputCompressed
-}
-
-# Zip editor dir
-if($Variables.OutputEditor)
-{
-	Write-Host "Create editor zip file"
-	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -EditorManifest $true
-	$ArchiveSize += Compress-FolderToZip -SourceFolder $OutputEditorDir -ZipPath $EditorZipFilePath -OutputCompressed $Variables.OutputCompressed
-	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -NullVersion
-}
-
-
-# Compute installer size
-$ArchiveSize /= 1000
-Write-Host "Total archive size will be " $ArchiveSize
 
 # Get NSIS path to create installer
 if ($env:NSIS)
@@ -188,24 +179,113 @@ If (-not (Test-Path -Path $NSISCompilerPath))
 	return
 }
 
-# Call NSIS to create installer
-Write-Host "Building installer using NSIS Compiler: $NSISCompilerPath"
-$location = Get-Location
-Set-Location $ExtensionInstallerSourcePath
 
-& "$NSISCompilerPath" /D"PRODUCT_VERSION=$Version" /D"PRODUCT_UPGRADE_CODE=$ProductUpgradeCode" /D"PRODUCT_NAME=$InstallerName" /D"SKYREAL_VERSION=$SkyRealVersion" /D"BUILD_DIR=$OutputInstallDir" /D"COMPANY_NAME=$CompanyName" /D"ARCHIVE_SIZE=$ArchiveSize" main.nsi
+# Generate installers
+Write-Host "Generate installers"
+foreach ($outputItem in $Variables.Output) {
 
+	# Extract fields into variables
+	$name                   = $outputItem.Name
+	$productUpgradeCode     = $outputItem.ProductUpgradeCode
+	$outputAsSinglePackage  = $outputItem.OutputAsSinglePackage
+	$outputCook             = $outputItem.OutputCook
+	$outputCookAsPakFile    = $outputItem.OutputCookAsPakFile
+	$outputEditor           = $outputItem.OutputEditor
+	$outputEditorAsPakFile  = $outputItem.OutputEditorAsPakFile
+	$outputCompressed  		= $outputItem.OutputCompressed
+	
+	$SkrAppBaseFileName = $name + " " + $Version
 
-If ($? -ne $true) {
-    Write-Error "NSIS Failed"
+	Write-Host "Generate package $name"
+	$ArchiveSize = 0
+	try{
+		$globalZip = $null
+		if ($outputAsSinglePackage -eq $true)
+		{
+			$globalZip = Create-Zip -ZipPath (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".skrmkt"))
+		}
+		
+		if ($outputCook)
+		{
+			try {
+				$zip = $outputAsSinglePackage -eq $true ? $globalZip : (Create-Zip -ZipPath (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".skrapp")))
+				$subPath = $outputAsSinglePackage -eq $true ? "cook" : $null
+
+				$extensionJsonFilePath = [System.IO.FileInfo]::new((Join-Path $OutputCookDir "$name.json"))
+				if ($extensionJsonFilePath.Exists) {
+					Compress-FileToZip -SourceFolder $OutputCookDir -SourceFile $extensionJsonFilePath -Archive $zip.Archive -OutputCompressed $outputCompressed -InnerArchiveRootPath $subPath
+				}
+				$ArchiveSize += Compress-FolderToZip -SourceFolder $OutputCookDir -Archive $zip.Archive -OutputCompressed $outputCompressed -SubFoldersToInclude $outputItem.ExtensionsPlugins -InnerArchiveRootPath $subPath
+			} finally {
+				if ($outputAsSinglePackage -eq $false) {
+					Close-Zip -Archive $zip.Archive -ZipStream $zip.ZipStream
+				}
+			}
+			Write-Host "Create cook skrapp file for output $name"
+		}
+		if ($outputEditor)
+		{
+			Write-Host "Create editor zip file for output $name"
+			& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -EditorManifest $true
+			
+			try {
+				$zip = $outputAsSinglePackage -eq $true ? $globalZip : (Create-Zip -ZipPath (Join-Path $OutputInstallDir ($SkrAppBaseFileName + "_Editor.zip")))
+				$subPath = $outputAsSinglePackage -eq $true ? "editor" : $null
+				
+				$extensionJsonFilePath = [System.IO.FileInfo]::new((Join-Path $OutputEditorDir "$name.json"))
+				if ($extensionJsonFilePath.Exists) {
+					Compress-FileToZip -SourceFolder $OutputEditorDir -SourceFile $extensionJsonFilePath -Archive $zip.Archive -OutputCompressed $outputCompressed -InnerArchiveRootPath $subPath
+				}
+				$ArchiveSize += Compress-FolderToZip -SourceFolder $OutputEditorDir -Archive $zip.Archive -OutputCompressed $outputCompressed -SubFoldersToInclude $outputItem.ExtensionsPlugins -InnerArchiveRootPath $subPath
+			} finally {
+				if ($outputAsSinglePackage -eq $false) {
+					Close-Zip -Archive $zip.Archive -ZipStream $zip.ZipStream
+				}
+			}
+					
+			& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -NullVersion
+		}
+	} finally {
+		if ($globalZip) { 
+			Close-Zip -Archive $globalZip.Archive -ZipStream $globalZip.ZipStream
+		}
+	}
+	
+	
+	# Build installer if required
+	if ($outputAsSinglePackage -eq $false)
+	{
+		try{
+			# Compute installer size
+			$ArchiveSize /= 1000
+			Write-Host "Total $name archive size will be " $ArchiveSize
+			
+			
+			# Call NSIS to create installer
+			Write-Host "Building installer using NSIS Compiler: $NSISCompilerPath"
+			$location = Get-Location
+			Set-Location $ExtensionInstallerSourcePath
+			
+			& "$NSISCompilerPath" /D"PRODUCT_VERSION=$Version" /D"PRODUCT_UPGRADE_CODE=$productUpgradeCode" /D"PRODUCT_NAME=$name" /D"SKYREAL_VERSION=$SkyRealVersion" /D"BUILD_DIR=$OutputInstallDir" /D"COMPANY_NAME=$CompanyName" /D"ARCHIVE_SIZE=$ArchiveSize" main.nsi
+			
+			If ($? -ne $true) {
+				Write-Error "NSIS Failed"
+			}
+			else {
+				Write-Host "NSIS Completed"
+			}
+		} finally {
+			Set-Location $location
+		}
+	}
+	
+	
 }
-else {
-    Write-Host "NSIS Completed"
-}
 
-Set-Location $location
 
-foreach	($AdditionalInstallersScript in $AdditionalInstallersScripts)
+
+# Call aditional scripts
+foreach	($AdditionalInstallersScript in $Variables.AdditionalInstallersScripts)
 {
 	& "$AdditionalInstallersScript" 
 }
