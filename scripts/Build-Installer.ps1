@@ -1,3 +1,8 @@
+# Load the .net assembly for ZipArchive and ZipFile:
+Add-Type -AssemblyName 'System.IO.Compression'
+Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
+
+# Load variables
 $Variables = & (Join-Path $PSScriptRoot Get-Variables.ps1)
 foreach ($hook in $Variables.Hooks) {
     if ($hook.trigger -eq "build_installer_before") {
@@ -32,6 +37,9 @@ $SkrTmpZipFilePath = (Join-Path $OutputInstallDir "tmp.zip")
 $SkrAppFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".skrapp"))
 $EditorZipFilePath = (Join-Path $OutputInstallDir ($SkrAppBaseFileName + "_Editor.zip"))
 
+$barLength = 40
+$consoleWidth = $Host.UI.RawUI.WindowSize.Width
+
 Write-Host "Clean and recreate output directory $OutputInstallDir"
 If (Test-Path -Path $OutputInstallDir)
 {
@@ -39,15 +47,113 @@ If (Test-Path -Path $OutputInstallDir)
 }
 New-Item -Path $OutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
 
+
+
+function Compress-FolderToZip {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$SourceFolder,
+
+        [Parameter(Mandatory=$true)]
+        [string]$ZipPath
+    )
+
+    Add-Type -AssemblyName 'System.IO.Compression'
+    Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
+
+	$totalDecompressedSize = 0
+    $zipStream = $null
+    $archive = $null
+    $startTime = Get-Date
+    $stopRequested = $false
+
+    # Ctrl+C event
+    $cancelEvent = Register-EngineEvent PowerShell.Exiting -Action {
+		$global:stopRequested = $true
+		Write-Host "`n⛔ Compression process aborted. Cleaning up..."
+    }
+	
+	$startTime = Get-Date
+	$index = 0
+	
+	$zipStream = $null
+	$archive = $null
+	$outputStream = $null
+	$inputStream = $null
+	try
+	{
+		Write-Host "Archive directory $SourceFolder to $ZipPath"
+		
+		$zipStream = [System.IO.File]::Open($ZipPath, [System.IO.FileMode]::Create)
+		$archive = [System.IO.Compression.ZipArchive]::new($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
+		
+		$files = Get-ChildItem -Path $SourceFolder -Exclude *.skrlnk -Recurse -File
+	
+		foreach ($file in $files) {
+			if ($global:stopRequested) { break }
+			$index++
+			$relativePath = $file.FullName.Substring($SourceFolder.Length + 1)
+			$compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
+			if ($file.Extension -ieq ".pak") {
+				$compressionLevel = [System.IO.Compression.CompressionLevel]::NoCompression
+			}
+			$entry = $archive.CreateEntry($relativePath, $compressionLevel)
+			$inputStream = [System.IO.File]::OpenRead($file.FullName)
+			$totalDecompressedSize += $inputStream.Length
+			$outputStream = $entry.Open()
+			$inputStream.CopyTo($outputStream)
+			$outputStream.Dispose()
+			$outputStream = $null
+			$inputStream.Dispose()
+			$inputStream = $null
+			
+
+			
+			$elapsed = (Get-Date) - $startTime
+			$percent = [math]::Round(($index / $files.Count) * 100, 1)
+			$filled = [int](($percent / 100) * $barLength)
+			$bar = ('#' * $filled).PadRight($barLength, '-')
+			
+			Write-Host "`r" -NoNewline
+			Write-Host (" " * ($consoleWidth - 1)) -NoNewline
+			Write-Host "`r" -NoNewline
+			Write-Host ("`r[{0}] {1}% ({2}/{3}) - {4}s - {5}" -f $bar, $percent, $index, $files.Count, [int]$elapsed.TotalSeconds, $file.Name) -NoNewline
+		}
+	}
+	finally 
+	{
+		Write-Host ""
+		Write-Host "Cleaning memory"
+		if ($outputStream) { 
+			try { $outputStream.Dispose() } catch {}
+		}
+		if ($inputStream) { 
+			try { $inputStream.Dispose() } catch {}
+		}
+		if ($archive) { 
+			try { $archive.Dispose() } catch {}
+		}
+		if ($zipStream) { 
+			try { $zipStream.Dispose() } catch {}
+		}
+		[System.GC]::Collect()
+		[System.GC]::WaitForPendingFinalizers()
+		Unregister-Event -SourceIdentifier PowerShell.Exiting -ErrorAction SilentlyContinue
+	}
+	Write-Host ("Done creating archive file in {0:N1} secondes" -f ((Get-Date) - $startTime).TotalSeconds)
+	Write-Host "totalDecompressedSize is $totalDecompressedSize" 
+	return $totalDecompressedSize
+}
+
+
+
+$ArchiveSize = 0
+
 # Zip cook dir
 If ($Variables.OutputCook)
 {
 	Write-Host "Create cook skrapp file"
-	$filesToCompress = Get-ChildItem -Path $OutputCookDir -Exclude *.skrlnk
-	Compress-Archive -Path $filesToCompress.FullName -DestinationPath $SkrTmpZipFilePath -Force
-	Move-Item -Path $SkrTmpZipFilePath -Destination $SkrAppFilePath
-	
-	Write-Host "Done creating cook skrapp file"
+	$ArchiveSize += Compress-FolderToZip -SourceFolder $OutputCookDir -ZipPath $SkrAppFilePath
 }
 
 # Zip editor dir
@@ -55,22 +161,13 @@ if($Variables.OutputEditor)
 {
 	Write-Host "Create editor zip file"
 	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -EditorManifest $true
-	
-	$filesToCompress = Get-ChildItem -Path $OutputEditorDir -Exclude *.skrlnk
-	Compress-Archive -Path $filesToCompress.FullName -DestinationPath $SkrTmpZipFilePath -Force
-	Move-Item -Path $SkrTmpZipFilePath -Destination $EditorZipFilePath
-	
+	$ArchiveSize += Compress-FolderToZip -SourceFolder $OutputEditorDir -ZipPath $EditorZipFilePath
 	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -NullVersion
-	Write-Host "Done creating editor zip file"
 }
 
 
 # Compute installer size
-Add-Type -assembly "system.io.compression.filesystem"
-$Archive = [io.compression.zipfile]::OpenRead($SkrAppFilePath)
-$ArchiveSize = $Archive.Entries.Length | Measure-Object -Sum
-$ArchiveSize = $ArchiveSize.Sum / 1000
-$Archive.Dispose()
+$ArchiveSize /= 1000
 Write-Host "Total archive size will be " $ArchiveSize
 
 # Get NSIS path to create installer
