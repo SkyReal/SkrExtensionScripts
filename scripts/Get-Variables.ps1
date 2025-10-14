@@ -98,6 +98,7 @@ Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "Outp
 Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputCookAsPakFile"
 Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputEditor" 
 Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputEditorAsPakFile"
+Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "OutputCompressed" -DefaultValue $true
 
 if (-not $VariablesDocument.PSObject.Properties['FullVersion']) {
     $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'FullVersion' -Value "0.0.0.0"

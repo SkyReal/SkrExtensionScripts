@@ -55,7 +55,10 @@ function Compress-FolderToZip {
         [string]$SourceFolder,
 
         [Parameter(Mandatory=$true)]
-        [string]$ZipPath
+        [string]$ZipPath,
+
+        [Parameter(Mandatory=$true)]
+        [bool]$OutputCompressed
     )
 
     Add-Type -AssemblyName 'System.IO.Compression'
@@ -94,7 +97,7 @@ function Compress-FolderToZip {
 			$index++
 			$relativePath = $file.FullName.Substring($SourceFolder.Length + 1)
 			$compressionLevel = [System.IO.Compression.CompressionLevel]::Optimal
-			if ($file.Extension -ieq ".pak") {
+			if (($file.Extension -ieq ".pak") -or (-not $OutputCompressed)) {
 				$compressionLevel = [System.IO.Compression.CompressionLevel]::NoCompression
 			}
 			$entry = $archive.CreateEntry($relativePath, $compressionLevel)
@@ -153,7 +156,7 @@ $ArchiveSize = 0
 If ($Variables.OutputCook)
 {
 	Write-Host "Create cook skrapp file"
-	$ArchiveSize += Compress-FolderToZip -SourceFolder $OutputCookDir -ZipPath $SkrAppFilePath
+	$ArchiveSize += Compress-FolderToZip -SourceFolder $OutputCookDir -ZipPath $SkrAppFilePath -OutputCompressed $Variables.OutputCompressed
 }
 
 # Zip editor dir
@@ -161,7 +164,7 @@ if($Variables.OutputEditor)
 {
 	Write-Host "Create editor zip file"
 	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -EditorManifest $true
-	$ArchiveSize += Compress-FolderToZip -SourceFolder $OutputEditorDir -ZipPath $EditorZipFilePath
+	$ArchiveSize += Compress-FolderToZip -SourceFolder $OutputEditorDir -ZipPath $EditorZipFilePath -OutputCompressed $Variables.OutputCompressed
 	& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -NullVersion
 }
 
