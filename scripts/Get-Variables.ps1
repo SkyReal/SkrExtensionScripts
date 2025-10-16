@@ -151,30 +151,32 @@ $VariablesDocument.PSObject.Properties.Remove('OutputEditorAsPakFile')
 $VariablesDocument.PSObject.Properties.Remove('OutputCompressed')
 
 
-$allPlugins = @()
-$allPluginsToCook = @()
-$allPluginsToCookAndPak = @()
-$allPluginsToEditor = @()
-$allPluginsToEditorAndPak = @()
+$allPlugins = New-Object 'System.Collections.Generic.HashSet[System.String]'
+$allPluginsToCook = New-Object 'System.Collections.Generic.HashSet[System.String]'
+$allPluginsToCookAndPak = New-Object 'System.Collections.Generic.HashSet[System.String]'
+$allPluginsToEditor = New-Object 'System.Collections.Generic.HashSet[System.String]'
+$allPluginsToEditorAndPak = New-Object 'System.Collections.Generic.HashSet[System.String]'
 foreach ($obj in $VariablesDocument.Output) {
 	if ($obj.ProductUpgradeCode -eq "641C1FE1-7B3E-4184-92B4-DD701FE7F4E9") {
 		Write-Warning "Warning, ProductUpgradeCode variable in Variable.json should be changed (ignore this warning on sample project)."
 	}
 	if ($obj.ExtensionsPlugins) {
-		$allPlugins += $obj.ExtensionsPlugins
-	}
-	if ($obj.OutputCook -eq $true) {
-		$allPluginsToCook += $obj.ExtensionsPlugins
-	}
-	if ($obj.OutputCookAsPakFile -eq $true) {
-		$allPluginsToCookAndPak += $obj.ExtensionsPlugins
-	}
-	if ($obj.OutputEditor -eq $true) {
-		$allPluginsToEditor += $obj.ExtensionsPlugins
-	}
-	if ($obj.OutputEditorAsPakFile -eq $true) {
-		$allPluginsToEditorAndPak += $obj.ExtensionsPlugins
-	}
+		
+        $obj.ExtensionsPlugins | ForEach-Object { $null = $allPlugins.Add($_) }
+		if ($obj.OutputCook -eq $true) {
+			$obj.ExtensionsPlugins | ForEach-Object { $null = $allPluginsToCook.Add($_) }
+		}
+		if ($obj.OutputCookAsPakFile -eq $true) {
+			$obj.ExtensionsPlugins | ForEach-Object { $null = $allPluginsToCookAndPak.Add($_) }
+		}
+		if ($obj.OutputEditor -eq $true) {
+			$obj.ExtensionsPlugins | ForEach-Object { $null = $allPluginsToEditor.Add($_) }
+		}
+		if ($obj.OutputEditorAsPakFile -eq $true) {
+			$obj.ExtensionsPlugins | ForEach-Object { $null = $allPluginsToEditorAndPak.Add($_) }
+		}
+    }
+	
 	Normalize-BoolVariable -VariablesDocument $obj -PropertyName "OutputAsSinglePackage" -DefaultValue $false
 	Normalize-BoolVariable -VariablesDocument $obj -PropertyName "OutputCook" -DefaultValue $true
 	Normalize-BoolVariable -VariablesDocument $obj -PropertyName "OutputCookAsPakFile"
