@@ -197,18 +197,20 @@ foreach ($outputItem in $Variables.Output) {
 	$SkrAppBaseFileName = $name + " " + $Version
 
 	Write-Host "Generate package $name"
+	$LocalOutputInstallDir = Join-Path $OutputInstallDir $name
+	New-Item -Path $LocalOutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
 	$ArchiveSize = 0
 	try{
 		$globalZip = $null
 		if ($outputAsSinglePackage -eq $true)
 		{
-			$globalZip = Create-Zip -ZipPath (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".skrmkt"))
+			$globalZip = Create-Zip -ZipPath (Join-Path $LocalOutputInstallDir ($SkrAppBaseFileName + ".skrmkt"))
 		}
 		
 		if ($outputCook)
 		{
 			try {
-				$zip = $outputAsSinglePackage -eq $true ? $globalZip : (Create-Zip -ZipPath (Join-Path $OutputInstallDir ($SkrAppBaseFileName + ".skrapp")))
+				$zip = $outputAsSinglePackage -eq $true ? $globalZip : (Create-Zip -ZipPath (Join-Path $LocalOutputInstallDir ($SkrAppBaseFileName + ".skrapp")))
 				$subPath = $outputAsSinglePackage -eq $true ? "cook" : $null
 
 				$extensionJsonFilePath = [System.IO.FileInfo]::new((Join-Path $OutputCookDir "$name.json"))
@@ -229,7 +231,7 @@ foreach ($outputItem in $Variables.Output) {
 			& (Join-Path $PSScriptRoot 'Create-Update-AllManifests.ps1') -ForceUpdate $true -EditorManifest $true
 			
 			try {
-				$zip = $outputAsSinglePackage -eq $true ? $globalZip : (Create-Zip -ZipPath (Join-Path $OutputInstallDir ($SkrAppBaseFileName + "_Editor.zip")))
+				$zip = $outputAsSinglePackage -eq $true ? $globalZip : (Create-Zip -ZipPath (Join-Path $LocalOutputInstallDir ($SkrAppBaseFileName + "_Editor.zip")))
 				$subPath = $outputAsSinglePackage -eq $true ? "editor" : $null
 				
 				$extensionJsonFilePath = [System.IO.FileInfo]::new((Join-Path $OutputEditorDir "$name.json"))
@@ -266,7 +268,7 @@ foreach ($outputItem in $Variables.Output) {
 			$location = Get-Location
 			Set-Location $ExtensionInstallerSourcePath
 			
-			& "$NSISCompilerPath" /D"PRODUCT_VERSION=$Version" /D"PRODUCT_UPGRADE_CODE=$productUpgradeCode" /D"PRODUCT_NAME=$name" /D"SKYREAL_VERSION=$SkyRealVersion" /D"BUILD_DIR=$OutputInstallDir" /D"COMPANY_NAME=$CompanyName" /D"ARCHIVE_SIZE=$ArchiveSize" main.nsi
+			& "$NSISCompilerPath" /D"PRODUCT_VERSION=$Version" /D"PRODUCT_UPGRADE_CODE=$productUpgradeCode" /D"PRODUCT_NAME=$name" /D"SKYREAL_VERSION=$SkyRealVersion" /D"BUILD_DIR=$LocalOutputInstallDir" /D"COMPANY_NAME=$CompanyName" /D"ARCHIVE_SIZE=$ArchiveSize" main.nsi
 			
 			If ($? -ne $true) {
 				Write-Error "NSIS Failed"
