@@ -35,9 +35,9 @@ $consoleWidth = $Host.UI.RawUI.WindowSize.Width
 Write-Host "Clean and recreate output directory $OutputInstallDir"
 If (Test-Path -Path $OutputInstallDir)
 {
-	Remove-Item -path $OutputInstallDir -Force -Recurse
+	$null = Remove-Item -path $OutputInstallDir -Force -Recurse
 }
-New-Item -Path $OutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
+$null = New-Item -Path $OutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
 
 function Create-Zip {
     param(
@@ -131,18 +131,21 @@ function Compress-FolderToZip {
         [bool]$OutputCompressed
     )
 	$totalDecompressedSize = 0
-    $startTime = Get-Date
-	$index = 0
+	$folderStartTime = Get-Date
 	
 	Write-Host "Archive directory $SourceFolder"
 	
 	foreach ($subFolder in $SubFoldersToInclude) {
+		Write-Host " - Archive directory $subFolder"
+		$index = 0
+		$startTime = Get-Date
 		$subFolderFullPath = Join-Path $SourceFolder $subFolder
 		
 		$files = Get-ChildItem -Path $subFolderFullPath -Exclude *.skrlnk -Recurse -File
 	
 		foreach ($file in $files) {
 			$index++
+			$totalDecompressedSize += $file.Length
 			
 			Compress-FileToZip -SourceFolder $SourceFolder -SourceFile $file -Archive $Archive -OutputCompressed $OutputCompressed -InnerArchiveRootPath $InnerArchiveRootPath
 			
@@ -154,11 +157,12 @@ function Compress-FolderToZip {
 			Write-Host "`r" -NoNewline
 			Write-Host (" " * ($consoleWidth - 1)) -NoNewline
 			Write-Host "`r" -NoNewline
-			Write-Host ("`r[{0}] {1}% ({2}/{3}) - {4}s - {5}" -f $bar, $percent, $index, $files.Count, [int]$elapsed.TotalSeconds, $file.Name) -NoNewline
+			Write-Host ("`r   [{0}] {1}% ({2}/{3}) - {4}s - {5}" -f $bar, $percent, $index, $files.Count, [int]$elapsed.TotalSeconds, $file.Name) -NoNewline
 		}
+		Write-Host ""
 	}
 	
-	Write-Host ("Done archiving directory in {0:N1} secondes" -f ((Get-Date) - $startTime).TotalSeconds)
+	Write-Host ("Done archiving directory in {0:N1} secondes" -f ((Get-Date) - $folderStartTime).TotalSeconds)
 	Write-Host "totalDecompressedSize is $totalDecompressedSize" 
 	return $totalDecompressedSize
 }
@@ -198,7 +202,7 @@ foreach ($outputItem in $Variables.Output) {
 
 	Write-Host "Generate package $name"
 	$LocalOutputInstallDir = Join-Path $OutputInstallDir $name
-	New-Item -Path $LocalOutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
+	$null = New-Item -Path $LocalOutputInstallDir -ItemType Directory -ErrorAction SilentlyContinue
 	$ArchiveSize = 0
 	try{
 		$globalZip = $null

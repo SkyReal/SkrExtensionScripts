@@ -25,7 +25,7 @@ If (Test-Path -Path $RessourcesPluginsPath)
 }
 New-Item -ItemType Directory -Force -Path $RessourcesPluginsPath | Out-Null
 
-$SourcePluginsDir = [IO.Path]::Combine($RemoteSkyRealPluginDirectory, $SkyRealPluginRelease, "SkrPlugins")
+$SourcePluginsDir = [IO.Path]::Combine($RemoteSkyRealPluginDirectory, $SkyRealPluginRelease, $($Variables.UseSkrPluginsFull) ? "SkrPlugins_full" : "SkrPlugins")
 $SourcePluginsPathFile = [IO.Path]::Combine($SourcePluginsDir, $SkyRealPluginPatch + ".json")
 If (Test-Path -Path $SourcePluginsPathFile)
 {

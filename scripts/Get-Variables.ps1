@@ -191,6 +191,8 @@ $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'AllExtensionsPlu
 $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'AllExtensionsPlugins_Editor' -Value $allPluginsToEditor
 $VariablesDocument | Add-Member -MemberType NoteProperty -Name 'AllExtensionsPlugins_EditorAndPAK' -Value $allPluginsToEditorAndPak
 
+Normalize-BoolVariable -VariablesDocument $VariablesDocument -PropertyName "UseSkrPluginsFull" -DefaultValue $false
+
 
 # Uncomment this line to display JSon
 # $VariablesDocument | ConvertTo-Json -Depth 10 | ForEach-Object { Write-Host $_ }
