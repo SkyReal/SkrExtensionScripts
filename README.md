@@ -24,6 +24,7 @@ To make it work, create a `Variables.json` in your root folder of your main repo
 * **OutputCookAsPakFile**: When building cook output, PAK it to compress it. (False if missing)
 * **OutputEditorAsPakFile**: When building editor output, PAK it to compress it (once the content is PAK, it can no more be editable within Unreal editor). (False if missing)
 * **OutputCompressed**: Compress or not the Zip/Skrapp output. Enable this option reduce a bit the size of the archive but increase the build installer time. (True if missing)
+* **UseSkrPluginsFull**: Whether to use SkrPlugins or SkrPlugins_full. By default SkrPlugins is enough work. (False if missing)
 * **Hooks**: The hooks variable is used to specify additional scripts during all the setup/build prosses. To make it work, add as much items as you have hooks with following info:
   * **path**: The path (relative to repo root directory) of the hook powershell script.
   * **trigger**: The trigger raising the hook. Available values:
